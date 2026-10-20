@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">WakeCoach</string>
+
+    <string name="next_alarm_in">ההתראה הבאה בעוד %1$s</string>
+    <string name="duration_h_m">%1$d ש\' %2$d ד\'</string>
+    <string name="no_alarms">אין עדיין התראות</string>
+    <string name="add_alarm">הוסף התראה</string>
+    <string name="edit_alarm">עריכת התראה</string>
+    <string name="save">שמור</string>
+    <string name="delete">מחק</string>
+    <string name="cancel">ביטול</string>
+    <string name="label_hint">תווית (לא חובה)</string>
+    <string name="repeat_once">פעם אחת</string>
+    <string name="profile">פרופיל</string>
+    <string name="importance">כמה זה חשוב?</string>
+    <string name="importance_1">רגיל</string>
+    <string name="importance_2">חשוב</string>
+    <string name="importance_3">קריטי</string>
+    <string name="time_minus">−</string>
+    <string name="time_plus">+</string>
+
+    <string name="profile_gentle">עדין</string>
+    <string name="profile_gentle_desc">צליל רך, 3 נודניקים, בלי אתגר</string>
+    <string name="profile_balanced">מאוזן</string>
+    <string name="profile_balanced_desc">תרגיל חשבון, 2 נודניקים מתקצרים</string>
+    <string name="profile_firm">קשוח</string>
+    <string name="profile_firm_desc">אתגרים משתנים, נודניק קצר אחד</string>
+    <string name="profile_soldier">חייל</string>
+    <string name="profile_soldier_desc">בלי נודניק. חשבון והליכה. קמים עכשיו.</string>
+    <string name="profile_heavy_sleeper">ישנוני כבד</string>
+    <string name="profile_heavy_sleeper_desc">מהיר ורועש, ללכת או לנער כדי לכבות</string>
+
+    <string name="settings">הגדרות</string>
+    <string name="hand">צד האגודל</string>
+    <string name="hand_right">ימין</string>
+    <string name="hand_left">שמאל</string>
+    <string name="sleep_goal">יעד שינה</string>
+    <string name="hours_value">%1$.1f ש\'</string>
+    <string name="bedtime_reminders">תזכורות שינה</string>
+
+    <string name="evening_title">מה חשוב לך מחר?</string>
+    <string name="evening_hint">למשל: פגישה ב-8:30, חדר כושר, מבחן</string>
+    <string name="evening_button">המטרה של מחר</string>
+
+    <string name="swipe_to_stop">החלק עד הסוף כדי לכבות</string>
+    <string name="snooze_n">נודניק %1$d ד\'</string>
+    <string name="challenge_math">פתור כדי לכבות</string>
+    <string name="challenge_phrase">הקלד בדיוק:</string>
+    <string name="challenge_shake">נער את הטלפון: נשארו %1$d</string>
+    <string name="challenge_steps">קום ולך: נשארו %1$d צעדים</string>
+    <string name="check">בדוק</string>
+    <string name="wrong_try_again">לא בדיוק. נסה שוב.</string>
+
+    <string name="feedback_title">בוקר טוב! בדיקה קצרה</string>
+    <string name="q_mood">איך אתה מרגיש?</string>
+    <string name="q_wake_ease">איך היה לקום?</string>
+    <string name="q_tiredness">כמה אתה עייף?</string>
+    <string name="q_later_tiredness">כמה אתה עייף עכשיו?</string>
+    <string name="done">סיום</string>
+    <string name="skip">דלג</string>
+
+    <string name="fullscreen_needed">ייתכן שההתראות לא יוצגו על המסך. הקש לתיקון בהגדרות</string>
+    <string name="channel_alarm">התראות השכמה</string>
+    <string name="channel_coach">תזכורות שינה ובדיקות</string>
+    <string name="notif_ringing">ההתראה מצלצלת</string>
+    <string name="notif_bedtime_title">הגיע הזמן להירגע</string>
+    <string name="notif_followup_title">בדיקת עייפות קצרה</string>
+    <string name="notif_followup_text">הקש כדי לדרג כמה אתה ער עכשיו</string>
+</resources>

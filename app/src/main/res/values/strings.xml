@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">WakeCoach</string>
+
+    <string name="next_alarm_in">Next alarm in %1$s</string>
+    <string name="duration_h_m">%1$dh %2$dm</string>
+    <string name="no_alarms">No alarms yet</string>
+    <string name="add_alarm">Add alarm</string>
+    <string name="edit_alarm">Edit alarm</string>
+    <string name="save">Save</string>
+    <string name="delete">Delete</string>
+    <string name="cancel">Cancel</string>
+    <string name="label_hint">Label (optional)</string>
+    <string name="repeat_once">Once</string>
+    <string name="profile">Profile</string>
+    <string name="importance">How important?</string>
+    <string name="importance_1">Normal</string>
+    <string name="importance_2">Important</string>
+    <string name="importance_3">Critical</string>
+    <string name="time_minus">−</string>
+    <string name="time_plus">+</string>
+
+    <string name="profile_gentle">Gentle</string>
+    <string name="profile_gentle_desc">Soft sound, 3 snoozes, no challenge</string>
+    <string name="profile_balanced">Balanced</string>
+    <string name="profile_balanced_desc">Math challenge, 2 shrinking snoozes</string>
+    <string name="profile_firm">Firm</string>
+    <string name="profile_firm_desc">Mixed challenges, one short snooze</string>
+    <string name="profile_soldier">Soldier</string>
+    <string name="profile_soldier_desc">No snooze. Math and walking. Up now.</string>
+    <string name="profile_heavy_sleeper">Heavy sleeper</string>
+    <string name="profile_heavy_sleeper_desc">Fast and loud, walk or shake to stop</string>
+
+    <string name="settings">Settings</string>
+    <string name="hand">Thumb side</string>
+    <string name="hand_right">Right</string>
+    <string name="hand_left">Left</string>
+    <string name="sleep_goal">Sleep goal</string>
+    <string name="hours_value">%1$.1f h</string>
+    <string name="bedtime_reminders">Bedtime reminders</string>
+
+    <string name="evening_title">What matters to you tomorrow?</string>
+    <string name="evening_hint">e.g. 8:30 meeting, gym, exam</string>
+    <string name="evening_button">Tomorrow\'s goal</string>
+
+    <string name="swipe_to_stop">Slide all the way to stop</string>
+    <string name="snooze_n">Snooze %1$d min</string>
+    <string name="challenge_math">Solve to turn off</string>
+    <string name="challenge_phrase">Type exactly:</string>
+    <string name="challenge_shake">Shake the phone: %1$d left</string>
+    <string name="challenge_steps">Get up and walk: %1$d steps left</string>
+    <string name="check">Check</string>
+    <string name="wrong_try_again">Not quite. Try again.</string>
+
+    <string name="feedback_title">Good morning! Quick check-in</string>
+    <string name="q_mood">How do you feel?</string>
+    <string name="q_wake_ease">How was getting up?</string>
+    <string name="q_tiredness">How tired are you?</string>
+    <string name="q_later_tiredness">How tired are you now?</string>
+    <string name="done">Done</string>
+    <string name="skip">Skip</string>
+
+    <string name="fullscreen_needed">Alarms may not show on screen. Tap to fix in settings</string>
+    <string name="channel_alarm">Alarms</string>
+    <string name="channel_coach">Bedtime and check-ins</string>
+    <string name="notif_ringing">Alarm is ringing</string>
+    <string name="notif_bedtime_title">Time to wind down</string>
+    <string name="notif_followup_title">Quick tiredness check</string>
+    <string name="notif_followup_text">Tap to rate how awake you are now</string>
+</resources>

@@ -1,0 +1,125 @@
+package com.wakecoach.ui
+
+import com.wakecoach.data.profile
+import android.Manifest
+import android.app.NotificationManager
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.os.Bundle
+import android.provider.Settings
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.core.app.NotificationManagerCompat
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.wakecoach.container
+import com.wakecoach.core.model.ChallengeType
+import com.wakecoach.ui.edit.EditAlarmScreen
+import com.wakecoach.ui.evening.EveningScreen
+import com.wakecoach.ui.home.HomeScreen
+import com.wakecoach.ui.home.SettingsScreen
+import com.wakecoach.ui.ringing.RingingActivity
+import com.wakecoach.ui.theme.WakeCoachTheme
+
+sealed interface Screen {
+    data object Home : Screen
+    data class Edit(val alarmId: Long?) : Screen
+    data object Evening : Screen
+    data object Settings : Screen
+}
+
+class MainActivity : ComponentActivity() {
+    private val vm: MainViewModel by viewModels()
+    private var screen by mutableStateOf<Screen>(Screen.Home)
+    private val askPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        handle(intent)
+        if (Build.VERSION.SDK_INT >= 33) askPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+
+        setContent {
+            WakeCoachTheme {
+                val alarms by vm.alarms.collectAsStateWithLifecycle()
+                val settings by vm.settings.collectAsStateWithLifecycle()
+                val ringing by container.ringController.state.collectAsStateWithLifecycle()
+                // If notifications are blocked the full-screen intent never shows; open the ring UI from here.
+                LaunchedEffect(ringing != null) {
+                    if (ringing != null) startActivity(Intent(this@MainActivity, RingingActivity::class.java))
+                }
+                BackHandler(enabled = screen != Screen.Home) { screen = Screen.Home }
+
+                when (val s = screen) {
+                    Screen.Home -> HomeScreen(
+                        alarms = alarms,
+                        leftHanded = settings.leftHanded,
+                        needsFullScreenPermission = !canUseFullScreenIntent() || !notificationsEnabled(),
+                        onFixFullScreen = ::openAlarmDisplaySettings,
+                        onAdd = { screen = Screen.Edit(null) },
+                        onEdit = { screen = Screen.Edit(it.id) },
+                        onToggle = vm::setEnabled,
+                        onEvening = { screen = Screen.Evening },
+                        onSettings = { screen = Screen.Settings },
+                    )
+                    is Screen.Edit -> EditAlarmScreen(
+                        initial = alarms.firstOrNull { it.id == s.alarmId },
+                        leftHanded = settings.leftHanded,
+                        onSave = {
+                            if (ChallengeType.STEPS in it.profile.challenges && Build.VERSION.SDK_INT >= 29) {
+                                askPermission.launch(Manifest.permission.ACTIVITY_RECOGNITION)
+                            }
+                            vm.save(it); screen = Screen.Home
+                        },
+                        onDelete = { vm.delete(it); screen = Screen.Home },
+                        onCancel = { screen = Screen.Home },
+                    )
+                    Screen.Evening -> EveningScreen(
+                        load = vm::tomorrowPriority,
+                        onSave = { vm.saveTomorrowPriority(it); screen = Screen.Home },
+                        onCancel = { screen = Screen.Home },
+                    )
+                    Screen.Settings -> SettingsScreen(
+                        settings = settings,
+                        onChange = vm::updateSettings,
+                        onBack = { screen = Screen.Home },
+                    )
+                }
+            }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handle(intent)
+    }
+
+    private fun handle(intent: Intent?) {
+        if (intent?.getBooleanExtra(EXTRA_OPEN_EVENING, false) == true) screen = Screen.Evening
+    }
+
+    private fun canUseFullScreenIntent(): Boolean =
+        Build.VERSION.SDK_INT < 34 || getSystemService(NotificationManager::class.java).canUseFullScreenIntent()
+
+    private fun notificationsEnabled() = NotificationManagerCompat.from(this).areNotificationsEnabled()
+
+    private fun openAlarmDisplaySettings() {
+        if (!notificationsEnabled()) {
+            startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, packageName))
+        } else if (Build.VERSION.SDK_INT >= 34) {
+            startActivity(
+                Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT, Uri.parse("package:$packageName"))
+            )
+        }
+    }
+
+    companion object {
+        const val EXTRA_OPEN_EVENING = "open_evening"
+    }
+}
