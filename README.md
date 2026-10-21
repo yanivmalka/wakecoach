@@ -30,6 +30,9 @@ app/    אפליקציית Android: Compose, Room, DataStore, AlarmManager, Fore
 ```
 המודול `app` נכלל בבנייה רק כשנמצא Android SDK.
 
+Gradle 8.14.3 צריך לרוץ על JDK בגרסה 17 עד 24. מומלץ JDK 21, שמגיע עם Android Studio (לא JDK 25).
+ב-Android Studio מגדירים את זה ב-Settings → Build, Execution, Deployment → Build Tools → Gradle → Gradle JDK.
+
 ## בדיקה ידנית מומלצת
 1. מגדירים התראה לעוד 2 דקות, נועלים את המסך ומחכים שהיא תצלצל מעל מסך הנעילה.
 2. מצב Doze: `adb shell dumpsys deviceidle force-idle` ואז מחכים להתראה.
