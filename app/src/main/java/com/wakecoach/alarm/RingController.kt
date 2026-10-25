@@ -117,8 +117,8 @@ class RingController(
         val now = System.currentTimeMillis()
         val request = if (incoming.firstRingAt == 0L) incoming.copy(firstRingAt = now) else incoming
         val kind = alarm.alarmKind
-        // Only the first ring of a morning counts as a habit, not every snooze.
-        if (request.snoozeCount == 0) guarded("ring log") { guard.logRing(alarm, now) }
+        // Only the first ring of a morning counts as a habit: not snoozes, not a re-delivered ring.
+        if (incoming.firstRingAt == 0L) guarded("ring log") { guard.logRing(alarm, now) }
         guarded("re-arm") {
             if (kind == AlarmKind.TEST) {
                 // A test ring is single-use; drop its row now so it never shows up or re-arms.

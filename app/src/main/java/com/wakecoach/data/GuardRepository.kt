@@ -14,6 +14,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
+import java.time.ZonedDateTime
 
 /** Connects the alarm guard logic in core to the ring log, alarms and saved answers. */
 class GuardRepository(private val db: AppDatabase, private val settings: SettingsRepository) {
@@ -82,10 +83,14 @@ class GuardRepository(private val db: AppDatabase, private val settings: Setting
 
     private suspend fun planned(date: LocalDate): List<PlannedAlarm> {
         val startOfDay = date.atStartOfDay(zone).minusSeconds(1)
+        val now = ZonedDateTime.now(zone)
         return db.alarms().enabled()
             .filter { it.alarmKind != AlarmKind.TEST }
             .mapNotNull { a ->
-                val next = AlarmTimeCalculator.nextTrigger(a.time, a.repeatDays, startOfDay, a.skipLocalDate)
+                // A one-shot rings at its first occurrence from now (then turns off), so it only
+                // covers [date] if that first occurrence falls on it.
+                val from = if (a.repeatDays.isEmpty()) maxOf(now, startOfDay) else startOfDay
+                val next = AlarmTimeCalculator.nextTrigger(a.time, a.repeatDays, from, a.skipLocalDate)
                 if (next.toLocalDate() == date) PlannedAlarm(next.toLocalTime(), a.alarmKind, a.label) else null
             }
     }

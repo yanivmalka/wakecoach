@@ -49,7 +49,7 @@ fun GuardScreen(date: LocalDate, repo: GuardRepository, onChanged: suspend () ->
     var missing by remember { mutableStateOf<List<Slot>?>(null) }
     var decisions by remember { mutableStateOf<List<GuardDecision>>(emptyList()) }
     var refresh by remember { mutableIntStateOf(0) }
-    LaunchedEffect(refresh) {
+    LaunchedEffect(date, refresh) {
         val notBefore = if (date == LocalDate.now()) LocalDateTime.now() else null
         missing = repo.missing(date, notBefore)
         decisions = repo.decisions()

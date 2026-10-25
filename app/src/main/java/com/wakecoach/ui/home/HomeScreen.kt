@@ -78,7 +78,7 @@ fun HomeScreen(
         while (true) { now = ZonedDateTime.now(); delay(1000) }
     }
     val next = alarms.filter { it.enabled }
-        .map { AlarmTimeCalculator.nextTrigger(it.time, it.repeatDays, now) }
+        .map { AlarmTimeCalculator.nextTrigger(it.time, it.repeatDays, now, it.skipLocalDate) }
         .minOrNull()
 
     Column(
@@ -154,7 +154,8 @@ private fun AlarmRow(alarm: AlarmEntity, onClick: () -> Unit, onToggle: (Boolean
             val days = if (alarm.repeatDays.isEmpty()) stringResource(R.string.repeat_once)
             else alarm.repeatDays.sorted().joinToString(" ") { it.getDisplayName(TextStyle.SHORT, Locale.getDefault()) }
             val profile = if (alarm.alarmKind == AlarmKind.REMINDER) "" else stringResource(profileName(alarm.profileId))
-            alarm.skipLocalDate?.takeIf { !it.isBefore(LocalDate.now()) }?.let { skip ->
+            // One-shots added for a later day carry an internal skip of today; only repeating alarms show it.
+            alarm.skipLocalDate?.takeIf { alarm.repeatDays.isNotEmpty() && !it.isBefore(LocalDate.now()) }?.let { skip ->
                 Text(
                     "⏭ " + stringResource(R.string.skipping_on, skip.format(DateTimeFormatter.ofPattern("EEEE d/M"))),
                     fontSize = 15.sp, color = MaterialTheme.colorScheme.primary,

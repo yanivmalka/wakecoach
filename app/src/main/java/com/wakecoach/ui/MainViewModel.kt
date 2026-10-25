@@ -52,8 +52,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Skip only the next occurrence; the alarm stays on. */
     fun skipNext(alarm: AlarmEntity) = viewModelScope.launch {
-        val next = AlarmTimeCalculator.nextTrigger(alarm.time, alarm.repeatDays, ZonedDateTime.now(), alarm.skipLocalDate)
-        c.repository.alarms.upsert(alarm.copy(skipDate = next.toLocalDate().toEpochDay()))
+        // Keep a skip that is still ahead; only one skip is stored, so never move it to a later day.
+        val pending = alarm.skipLocalDate?.takeIf { !it.isBefore(java.time.LocalDate.now()) }
+        val next = pending ?: AlarmTimeCalculator.nextTrigger(alarm.time, alarm.repeatDays, ZonedDateTime.now()).toLocalDate()
+        c.repository.alarms.upsert(alarm.copy(skipDate = next.toEpochDay()))
         c.scheduler.cancel(alarm)
         c.scheduler.rescheduleAll()
         pendingDisable.value = null
