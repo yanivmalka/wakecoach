@@ -34,6 +34,8 @@ data class UserSettings(
     val guardEnabled: Boolean = true,
     /** [java.time.DayOfWeek.getValue] of days the guard stays quiet; Saturday by default. */
     val restDays: Set<Int> = setOf(6),
+    /** Re-ring if the user seems to have gone back to sleep after dismissing. */
+    val wakeCheck: Boolean = true,
 )
 
 class SettingsRepository(private val context: Context) {
@@ -51,6 +53,7 @@ class SettingsRepository(private val context: Context) {
         val PLAY_RECORDINGS = booleanPreferencesKey("play_recordings")
         val GUARD = booleanPreferencesKey("guard_enabled")
         val REST_DAYS = stringSetPreferencesKey("rest_days")
+        val WAKE_CHECK = booleanPreferencesKey("wake_check")
     }
 
     val settings: Flow<UserSettings> = context.dataStore.data.map {
@@ -69,6 +72,7 @@ class SettingsRepository(private val context: Context) {
             playRecordings = it[Keys.PLAY_RECORDINGS] ?: true,
             guardEnabled = it[Keys.GUARD] ?: true,
             restDays = it[Keys.REST_DAYS]?.mapNotNull(String::toIntOrNull)?.toSet() ?: UserSettings().restDays,
+            wakeCheck = it[Keys.WAKE_CHECK] ?: true,
         )
     }
 
@@ -90,6 +94,7 @@ class SettingsRepository(private val context: Context) {
             it[Keys.PLAY_RECORDINGS] = next.playRecordings
             it[Keys.GUARD] = next.guardEnabled
             it[Keys.REST_DAYS] = next.restDays.map(Int::toString).toSet()
+            it[Keys.WAKE_CHECK] = next.wakeCheck
         }
     }
 }

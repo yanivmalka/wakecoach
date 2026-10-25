@@ -52,6 +52,7 @@ fun SettingsScreen(
     calendarConnected: Boolean,
     onConnectCalendar: () -> Unit,
     onCheckGuard: () -> Unit,
+    onWakeCheckChange: (Boolean) -> Unit,
 ) {
     Column(
         Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).safeDrawingPadding().padding(20.dp)
@@ -133,6 +134,14 @@ fun SettingsScreen(
             }
             if (calendarConnected) Text("✅", fontSize = 20.sp)
             else OutlinedButton(onClick = onConnectCalendar) { Text(stringResource(R.string.calendar_connect)) }
+        }
+
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("😴 " + stringResource(R.string.wake_check_setting), fontSize = 18.sp)
+                Text(stringResource(R.string.wake_check_explain), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Switch(checked = settings.wakeCheck, onCheckedChange = onWakeCheckChange)
         }
 
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {

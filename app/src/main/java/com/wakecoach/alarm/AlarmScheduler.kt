@@ -86,6 +86,22 @@ class AlarmScheduler(
         setAlarmClock(at, ringIntent(request.alarmId.toInt() + SNOOZE_OFFSET, request))
     }
 
+    /** A ring a few minutes after dismissal that only happens if the relapse check says so. */
+    fun scheduleWakeCheck(delay: Duration) {
+        val pi = PendingIntent.getBroadcast(
+            context, WAKE_CHECK_CODE, Intent(context, WakeCheckReceiver::class.java),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        val at = System.currentTimeMillis() + delay.toMillis()
+        if (canExact()) am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, pi)
+        else am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, pi)
+    }
+
+    /** Fires a ring right now (used by the relapse check), through the normal ring path. */
+    fun ringNow(request: RingRequest) {
+        setAlarmClock(System.currentTimeMillis() + 1_000, ringIntent(request.alarmId.toInt() + RELAPSE_OFFSET, request))
+    }
+
     fun scheduleFollowUp(sessionId: Long, delay: Duration) {
         val pi = PendingIntent.getBroadcast(
             context, FOLLOW_UP_CODE,
@@ -150,6 +166,8 @@ class AlarmScheduler(
         private const val BEDTIME_CODE = 2_000_001
         private const val FOLLOW_UP_CODE = 2_000_002
         private const val GUARD_CODE = 2_000_003
+        private const val WAKE_CHECK_CODE = 2_000_004
+        private const val RELAPSE_OFFSET = 3_000_000
     }
 }
 
@@ -160,10 +178,15 @@ data class RingRequest(
     /** 0 until the first ring of this morning. */
     val firstRingAt: Long,
     val snoozeCount: Int,
+    /** Why this ring happens: a normal alarm, or a re-ring after the user went back to sleep. */
+    val mode: RingMode = RingMode.NORMAL,
+    /** Re-rings already given this morning (caps the relapse checks). */
+    val relapses: Int = 0,
 ) {
     fun writeTo(intent: Intent) {
         intent.putExtra(K_ID, alarmId).putExtra(K_SCHED, scheduledAt)
             .putExtra(K_FIRST, firstRingAt).putExtra(K_SNOOZE, snoozeCount)
+            .putExtra(K_MODE, mode.name).putExtra(K_RELAPSES, relapses)
     }
 
     companion object {
@@ -171,13 +194,25 @@ data class RingRequest(
         private const val K_SCHED = "scheduled_at"
         private const val K_FIRST = "first_ring_at"
         private const val K_SNOOZE = "snooze_count"
+        private const val K_MODE = "ring_mode"
+        private const val K_RELAPSES = "relapses"
 
         fun from(intent: Intent): RingRequest? {
             val id = intent.getLongExtra(K_ID, -1)
             if (id < 0) return null
             return RingRequest(
                 id, intent.getLongExtra(K_SCHED, 0), intent.getLongExtra(K_FIRST, 0), intent.getIntExtra(K_SNOOZE, 0),
+                mode = RingMode.entries.firstOrNull { it.name == intent.getStringExtra(K_MODE) } ?: RingMode.NORMAL,
+                relapses = intent.getIntExtra(K_RELAPSES, 0),
             )
         }
     }
+}
+
+enum class RingMode {
+    NORMAL,
+    /** The relapse check found the user back in bed: ring again, full strength. */
+    RELAPSE,
+    /** The check could not tell: a soft "still awake?" ring that takes one tap. */
+    ASK,
 }

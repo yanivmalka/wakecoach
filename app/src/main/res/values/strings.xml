@@ -198,4 +198,10 @@
     <string name="guard_setting_explain">Learns your regular alarms and reminders, and asks when one is missing.</string>
     <string name="rest_days">Rest days (no questions)</string>
     <string name="guard_check_now">Check now</string>
+    <string name="still_awake">Still awake? Tap to confirm</string>
+    <string name="relapse_line">Back to sleep? Not this time. Up you get!</string>
+    <string name="wake_check_setting">Back-to-sleep check</string>
+    <string name="wake_check_explain">A few minutes after you turn off a wake-up, checks you really got up, and rings again if not.</string>
+    <string name="health_steps">Step counting</string>
+    <string name="health_steps_body">Lets the back-to-sleep check see that you walked. Without it you get a \"still awake?\" tap instead.</string>
 </resources>

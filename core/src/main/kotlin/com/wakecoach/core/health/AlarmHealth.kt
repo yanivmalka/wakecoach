@@ -14,6 +14,8 @@ enum class HealthItem(
     SAMSUNG_SLEEPING(critical = true),
     ALARM_VOLUME(critical = false),
     DND_SILENCE(critical = false),
+    /** Step access lets the back-to-sleep check tell walking from lying in bed. */
+    STEP_ACCESS(critical = false),
 }
 
 data class HealthCheck(val item: HealthItem, val ok: Boolean)

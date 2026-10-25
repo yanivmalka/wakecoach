@@ -199,4 +199,10 @@
     <string name="guard_setting_explain">לומד את ההתראות והתזכורות הקבועות שלך, ושואל כשאחת חסרה.</string>
     <string name="rest_days">ימי מנוחה (בלי שאלות)</string>
     <string name="guard_check_now">בדוק עכשיו</string>
+    <string name="still_awake">עדיין ער? הקש לאישור</string>
+    <string name="relapse_line">חזרת לישון? לא הפעם. קום!</string>
+    <string name="wake_check_setting">בדיקת חזרה לשינה</string>
+    <string name="wake_check_explain">כמה דקות אחרי כיבוי ההשכמה, בודק שבאמת קמת, ומצלצל שוב אם לא.</string>
+    <string name="health_steps">ספירת צעדים</string>
+    <string name="health_steps_body">מאפשר לבדיקת החזרה לשינה לראות שהלכת. בלעדיה תקבל במקום זה \"עדיין ער?\" עם הקשה.</string>
 </resources>

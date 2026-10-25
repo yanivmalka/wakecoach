@@ -112,4 +112,5 @@ private fun texts(item: HealthItem): Pair<Int, Int> = when (item) {
     HealthItem.SAMSUNG_SLEEPING -> R.string.health_samsung to R.string.health_samsung_body
     HealthItem.ALARM_VOLUME -> R.string.health_volume to R.string.health_volume_body
     HealthItem.DND_SILENCE -> R.string.health_dnd to R.string.health_dnd_body
+    HealthItem.STEP_ACCESS -> R.string.health_steps to R.string.health_steps_body
 }

@@ -26,7 +26,7 @@ class HealthChecker(private val context: Context, private val scheduler: AlarmSc
 
     val isSamsung: Boolean = Build.MANUFACTURER.equals("samsung", ignoreCase = true)
 
-    fun run(enabledAlarms: List<AlarmEntity>, samsungConfirmed: Boolean): List<HealthCheck> = buildList {
+    fun run(enabledAlarms: List<AlarmEntity>, samsungConfirmed: Boolean, wakeCheck: Boolean = false): List<HealthCheck> = buildList {
         val nm = context.getSystemService(NotificationManager::class.java)
         val am = context.getSystemService(AlarmManager::class.java)
         val pm = context.getSystemService(PowerManager::class.java)
@@ -45,6 +45,12 @@ class HealthChecker(private val context: Context, private val scheduler: AlarmSc
         if (isSamsung) add(HealthCheck(HealthItem.SAMSUNG_SLEEPING, samsungConfirmed))
         add(HealthCheck(HealthItem.ALARM_VOLUME, audio.getStreamVolume(AudioManager.STREAM_ALARM) > 0))
         add(HealthCheck(HealthItem.DND_SILENCE, nm.currentInterruptionFilter != NotificationManager.INTERRUPTION_FILTER_NONE))
+        if (wakeCheck && Build.VERSION.SDK_INT >= 29) {
+            val granted = androidx.core.content.ContextCompat.checkSelfPermission(
+                context, android.Manifest.permission.ACTIVITY_RECOGNITION,
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+            add(HealthCheck(HealthItem.STEP_ACCESS, granted))
+        }
     }
 
     /**
@@ -73,7 +79,8 @@ class HealthChecker(private val context: Context, private val scheduler: AlarmSc
                 Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, pkg),
             )
             HealthItem.DND_SILENCE -> listOf(Intent("android.settings.ZEN_MODE_SETTINGS"), Intent(Settings.ACTION_SETTINGS))
-            HealthItem.ALARM_VOLUME, HealthItem.NEXT_ALARM_REGISTERED -> return false
+            // Asked in-app first; after two denials Android only allows it from app settings.
+            HealthItem.ALARM_VOLUME, HealthItem.NEXT_ALARM_REGISTERED, HealthItem.STEP_ACCESS -> return false
         }
         for (intent in candidates) {
             try {

@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.update
 import java.util.concurrent.atomic.AtomicBoolean
 import com.wakecoach.audio.AlarmPlayer
 import com.wakecoach.core.adapt.AdaptiveEngine
+import com.wakecoach.core.wake.RelapseCheck
 import com.wakecoach.core.adapt.MorningInput
 import com.wakecoach.core.audio.SoundContext
 import com.wakecoach.core.model.ChallengeType
@@ -77,6 +78,7 @@ class RingController(
     private val calendar: CalendarRepository,
     private val settings: SettingsRepository,
     private val guard: GuardRepository,
+    private val wakeCheck: WakeCheck,
 ) {
     private val _state = MutableStateFlow<RingState?>(null)
     val state: StateFlow<RingState?> = _state
@@ -116,7 +118,8 @@ class RingController(
 
         val now = System.currentTimeMillis()
         val request = if (incoming.firstRingAt == 0L) incoming.copy(firstRingAt = now) else incoming
-        val kind = alarm.alarmKind
+        // A "still awake?" check rings like a one-tap reminder, whatever the alarm normally is.
+        val kind = if (request.mode == RingMode.ASK) AlarmKind.REMINDER else alarm.alarmKind
         // Only the first ring of a morning counts as a habit: not snoozes, not a re-delivered ring.
         if (incoming.firstRingAt == 0L) guarded("ring log") { guard.logRing(alarm, now) }
         guarded("re-arm") {
@@ -143,7 +146,10 @@ class RingController(
                 )
             )
         } else null
-        val base = if (kind.isNudge) {
+        val base = if (request.mode == RingMode.ASK) {
+            val label = context.getString(R.string.still_awake)
+            RingState(request, kind, label, Profiles.REMINDER.copy(snooze = SnoozePolicy(0, 0)), Challenge.None, message = label)
+        } else if (kind.isNudge) {
             // A test has nothing to snooze to: its alarm row is already gone.
             val profile = if (kind == AlarmKind.TEST) Profiles.REMINDER.copy(snooze = SnoozePolicy(0, 0)) else Profiles.REMINDER
             RingState(request, kind, alarm.label, profile, Challenge.None, message = alarm.label)
@@ -189,6 +195,7 @@ class RingController(
         val morning = guarded("message") {
             val composer = MessageComposer(lang)
             listOfNotNull(
+                if (request.mode == RingMode.RELAPSE) context.getString(R.string.relapse_line) else null,
                 adapt?.let { composer.riskLine(it.reasons, LocalDate.now().dayOfWeek) },
                 composer.morningLine(repository.stats(), repository.priorityFor(LocalDate.now())),
             ).joinToString("\n")
@@ -248,6 +255,14 @@ class RingController(
         val s = _state.value ?: return null
         stop()
         if (s.kind.isNudge) {
+            // Answering "still awake?" is proof enough; a reminder has nothing more to do.
+            scheduler.rescheduleAll()
+            return null
+        }
+        // A re-ring after going back to sleep is the same morning: no new session or check-in,
+        // but one more surprise check while re-rings remain.
+        if (s.request.mode == RingMode.RELAPSE) {
+            armWakeCheck(s)
             scheduler.rescheduleAll()
             return null
         }
@@ -265,8 +280,18 @@ class RingController(
         statusTracker.dismissed(Instant.ofEpochMilli(now))
         // Random 25-40 min so the second tiredness sample is not predictable.
         scheduler.scheduleFollowUp(id, Duration.ofMinutes(25L + Random.nextLong(16)))
+        armWakeCheck(s)
         scheduler.rescheduleAll()
         return id
+    }
+
+    private suspend fun armWakeCheck(s: RingState) {
+        if (s.kind != AlarmKind.WAKE || !WakeCheck.mayRingAgain(s.request)) return
+        guarded("wake check") {
+            if (settings.current().wakeCheck) {
+                wakeCheck.arm(s.request, scheduler, RelapseCheck.delayMinutes(s.profile.intensity))
+            }
+        }
     }
 
     private fun stop() {

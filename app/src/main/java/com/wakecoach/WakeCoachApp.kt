@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.content.Context
 import com.wakecoach.alarm.AlarmScheduler
 import com.wakecoach.alarm.RingController
+import com.wakecoach.alarm.WakeCheck
 import com.wakecoach.core.share.StatusPublisher
 import com.wakecoach.core.share.WakeStatusTracker
 import com.wakecoach.data.AppDatabase
@@ -64,8 +65,9 @@ class AppContainer(context: Context) {
     val recordings = RecordingRepository(context, db.recordings())
     val calendar = CalendarRepository(context)
     val guard = GuardRepository(db, settings)
+    val wakeCheck = WakeCheck(context)
     val ringController = RingController(
-        context, repository, scheduler, statusTracker, quotes, recordings, calendar, settings, guard,
+        context, repository, scheduler, statusTracker, quotes, recordings, calendar, settings, guard, wakeCheck,
     )
     val updater = Updater(context)
     val health = HealthChecker(context, scheduler)

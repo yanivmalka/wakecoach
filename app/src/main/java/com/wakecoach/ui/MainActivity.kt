@@ -69,6 +69,7 @@ class MainActivity : ComponentActivity() {
     private var screen by mutableStateOf<Screen>(Screen.Home)
     // Bumped on every resume so permission-dependent UI re-reads system state after visiting Settings.
     private var resumes by mutableIntStateOf(0)
+    private var stepAsked = false
     private val askPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -112,8 +113,8 @@ class MainActivity : ComponentActivity() {
                 }
 
                 // Re-read phone settings on every resume (the user may be back from fixing one).
-                val checks = remember(resumes, alarms, settings.samsungNeverSleepConfirmed) {
-                    container.health.run(alarms.filter { it.enabled }, settings.samsungNeverSleepConfirmed)
+                val checks = remember(resumes, alarms, settings.samsungNeverSleepConfirmed, settings.wakeCheck) {
+                    container.health.run(alarms.filter { it.enabled }, settings.samsungNeverSleepConfirmed, settings.wakeCheck)
                 }
                 val healthProblem = !AlarmHealth.summarize(checks).allGood
                 var testScheduled by remember { mutableStateOf(false) }
@@ -190,6 +191,7 @@ class MainActivity : ComponentActivity() {
                         onOpenRecordings = { screen = Screen.Recordings },
                         calendarConnected = resumes.let { container.calendar.hasPermission() },
                         onConnectCalendar = { askPermission.launch(Manifest.permission.READ_CALENDAR) },
+                        onWakeCheckChange = { on -> vm.updateSettings { it.copy(wakeCheck = on) } },
                         onCheckGuard = { screen = Screen.Guard(GuardNotifier.window(LocalDateTime.now()).first) },
                         onCheckUpdates = {
                             showUpdate = true
@@ -222,8 +224,19 @@ class MainActivity : ComponentActivity() {
                                 HealthItem.ALARM_VOLUME -> { container.health.raiseAlarmVolume(); resumes++ }
                                 HealthItem.NEXT_ALARM_REGISTERED ->
                                     scope.launch { container.scheduler.rescheduleAll(); resumes++ }
+                                HealthItem.STEP_ACCESS -> if (Build.VERSION.SDK_INT >= 29) {
+                                    if (shouldShowRequestPermissionRationale(Manifest.permission.ACTIVITY_RECOGNITION) ||
+                                        !stepAsked
+                                    ) {
+                                        stepAsked = true
+                                        askPermission.launch(Manifest.permission.ACTIVITY_RECOGNITION)
+                                    } else {
+                                        container.health.openFix(this@MainActivity, HealthItem.BACKGROUND_RESTRICTED)
+                                    }
+                                }
                                 else -> container.health.openFix(this@MainActivity, item)
                             }
+                            Unit // the when above is a statement: its branches return different types
                         },
                         onConfirmSamsung = { vm.updateSettings { it.copy(samsungNeverSleepConfirmed = true) } },
                         onTestAlarm = {

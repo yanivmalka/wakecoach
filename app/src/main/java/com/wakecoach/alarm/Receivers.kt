@@ -210,3 +210,14 @@ object GuardNotifier {
         context.getSystemService(NotificationManager::class.java).notify(NOTIF_ID, n)
     }
 }
+
+/** The surprise "back to sleep?" check a few minutes after a wake-up was dismissed. */
+class WakeCheckReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        goAsyncWith(context) {
+            val c = context.container
+            if (!c.settings.current().wakeCheck) { c.wakeCheck.clear(); return@goAsyncWith }
+            c.wakeCheck.check()?.let(c.scheduler::ringNow)
+        }
+    }
+}
