@@ -16,6 +16,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -36,7 +37,13 @@ import com.wakecoach.ui.theme.ThemeMode
 import kotlin.math.roundToInt
 
 @Composable
-fun SettingsScreen(settings: UserSettings, onChange: ((UserSettings) -> UserSettings) -> Unit, onBack: () -> Unit) {
+fun SettingsScreen(
+    settings: UserSettings,
+    onChange: ((UserSettings) -> UserSettings) -> Unit,
+    onBack: () -> Unit,
+    version: String,
+    onCheckUpdates: () -> Unit,
+) {
     Column(
         Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).safeDrawingPadding().padding(20.dp)
             .verticalScroll(rememberScrollState()),
@@ -87,6 +94,16 @@ fun SettingsScreen(settings: UserSettings, onChange: ((UserSettings) -> UserSett
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(stringResource(R.string.bedtime_reminders), fontSize = 18.sp, modifier = Modifier.weight(1f))
             Switch(checked = settings.bedtimeReminders, onCheckedChange = { b -> onChange { it.copy(bedtimeReminders = b) } })
+        }
+
+        Text(stringResource(R.string.updates), fontSize = 18.sp)
+        Text(stringResource(R.string.version_n, version), fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text(stringResource(R.string.auto_check_updates), fontSize = 18.sp, modifier = Modifier.weight(1f))
+            Switch(checked = settings.autoCheckUpdates, onCheckedChange = { b -> onChange { it.copy(autoCheckUpdates = b) } })
+        }
+        OutlinedButton(onClick = onCheckUpdates, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
+            Text(stringResource(R.string.check_updates), fontSize = 18.sp)
         }
 
         Spacer(Modifier.height(8.dp))

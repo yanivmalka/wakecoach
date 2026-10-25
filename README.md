@@ -22,7 +22,14 @@ core/   לוגיקה ב-Kotlin טהור (בלי Android) + בדיקות: פרו�
 app/    אפליקציית Android: Compose, Room, DataStore, AlarmManager, Foreground Service
 ```
 
-## בנייה
+## התקנה ועדכונים
+כל push ל-`main` נבנה ב-GitHub Actions (`.github/workflows/build.yml`) ומתפרסם כ-Release עם `wakecoach.apk`.
+- **התקנה ראשונה:** מורידים את `wakecoach.apk` מ-https://github.com/yanivmalka/wakecoach/releases/latest ומתקינים.
+- **עדכונים:** האפליקציה בודקת עדכונים בפתיחה (לכל היותר פעם ב-6 שעות), ויש גם כפתור "בדוק עדכונים" בהגדרות.
+- **חתימה:** הבנייה דורשת את ה-Secrets `SIGNING_KEYSTORE_B64` ו-`SIGNING_PASSWORD`. כל הגרסאות חתומות באותו מפתח, ולכן עדכון מותקן מעל הגרסה הקיימת.
+- **כשל בבנייה:** נפתח issue בשם "CI build failed" עם הלוג, והוא נסגר לבד כשהבנייה הבאה מצליחה.
+
+## בנייה מקומית
 דרוש Android SDK (למשל דרך Android Studio).
 ```
 ./gradlew :core:test          # בדיקות הלוגיקה, לא דורש Android SDK

@@ -82,4 +82,20 @@
     <string name="remind_again_in">Remind me again in</string>
     <string name="minutes_short">%1$d min</string>
     <string name="reminder_done">Done</string>
+    <string name="update_title">App update</string>
+    <string name="update_available">Version %1$s is available – update</string>
+    <string name="update_downloading">Downloading update… %1$d%%</string>
+    <string name="update_installing">Installing update…</string>
+    <string name="update_checking">Checking for updates…</string>
+    <string name="update_up_to_date">You have the latest version</string>
+    <string name="update_failed">Update failed</string>
+    <string name="update_whats_new">What\'s new:</string>
+    <string name="update_permission_needed">To install updates, allow WakeCoach to install apps (one time).</string>
+    <string name="update_allow">Allow</string>
+    <string name="update_now">Update now</string>
+    <string name="update_later">Later</string>
+    <string name="updates">Updates</string>
+    <string name="version_n">Version %1$s</string>
+    <string name="check_updates">Check for updates</string>
+    <string name="auto_check_updates">Check automatically when opening</string>
 </resources>

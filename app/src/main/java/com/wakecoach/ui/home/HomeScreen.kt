@@ -68,6 +68,7 @@ fun HomeScreen(
     onToggle: (AlarmEntity, Boolean) -> Unit,
     onEvening: () -> Unit,
     onSettings: () -> Unit,
+    updateBanner: @Composable () -> Unit = {},
 ) {
     var now by remember { mutableStateOf(ZonedDateTime.now()) }
     LaunchedEffect(Unit) {
@@ -94,6 +95,7 @@ fun HomeScreen(
                 Text(stringResource(R.string.fullscreen_needed))
             }
         }
+        updateBanner()
         Spacer(Modifier.height(16.dp))
 
         LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {

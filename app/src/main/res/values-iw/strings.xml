@@ -82,4 +82,20 @@
     <string name="remind_again_in">הזכר לי שוב בעוד</string>
     <string name="minutes_short">%1$d ד\'</string>
     <string name="reminder_done">בוצע</string>
+    <string name="update_title">עדכון האפליקציה</string>
+    <string name="update_available">גרסה %1$s זמינה – עדכן</string>
+    <string name="update_downloading">מוריד עדכון… %1$d%%</string>
+    <string name="update_installing">מתקין עדכון…</string>
+    <string name="update_checking">בודק עדכונים…</string>
+    <string name="update_up_to_date">יש לך את הגרסה האחרונה</string>
+    <string name="update_failed">העדכון נכשל</string>
+    <string name="update_whats_new">מה חדש:</string>
+    <string name="update_permission_needed">כדי להתקין עדכונים, צריך לאשר ל-WakeCoach להתקין אפליקציות (פעם אחת).</string>
+    <string name="update_allow">אשר</string>
+    <string name="update_now">עדכן עכשיו</string>
+    <string name="update_later">אחר כך</string>
+    <string name="updates">עדכונים</string>
+    <string name="version_n">גרסה %1$s</string>
+    <string name="check_updates">בדוק עדכונים</string>
+    <string name="auto_check_updates">בדוק אוטומטית בפתיחה</string>
 </resources>

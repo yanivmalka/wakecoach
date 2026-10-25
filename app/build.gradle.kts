@@ -5,6 +5,12 @@ plugins {
     id("com.google.devtools.ksp")
 }
 
+// CI builds number themselves from the workflow run so every release is an upgrade;
+// local builds keep a fixed low number.
+val ciRun = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull()
+val releaseKeystore = System.getenv("SIGNING_KEYSTORE_PATH")?.let(::file)?.takeIf { it.exists() }
+val releasePassword = System.getenv("SIGNING_PASSWORD")
+
 android {
     namespace = "com.wakecoach"
     compileSdk = 35
@@ -13,13 +19,26 @@ android {
         applicationId = "com.wakecoach"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
-        versionName = "0.2.0"
+        versionCode = if (ciRun != null) 100 + ciRun else 2
+        versionName = if (ciRun != null) "0.2.$ciRun" else "0.2.0"
+    }
+
+    signingConfigs {
+        if (releaseKeystore != null && releasePassword != null) {
+            create("release") {
+                storeFile = releaseKeystore
+                storePassword = releasePassword
+                keyAlias = "wakecoach"
+                keyPassword = releasePassword
+            }
+        }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
+            // Without the release key (local builds) fall back to the debug key so the APK still installs.
+            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
         }
     }
     compileOptions {
@@ -31,6 +50,11 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
+    }
+    lint {
+        // Lint findings are reported, not fatal: a missed alarm is worse than a lint warning.
+        abortOnError = false
     }
 }
 

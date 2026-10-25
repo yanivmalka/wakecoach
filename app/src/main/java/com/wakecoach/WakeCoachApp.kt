@@ -11,6 +11,7 @@ import com.wakecoach.core.share.WakeStatusTracker
 import com.wakecoach.data.AppDatabase
 import com.wakecoach.data.SettingsRepository
 import com.wakecoach.data.WakeRepository
+import com.wakecoach.update.Updater
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.Dispatchers
@@ -55,6 +56,7 @@ class AppContainer(context: Context) {
     // Phase 5 swaps in a Firebase-backed publisher for approved buddies.
     val statusTracker = WakeStatusTracker(StatusPublisher.NONE)
     val ringController = RingController(context, repository, scheduler, statusTracker)
+    val updater = Updater(context)
 }
 
 val Context.container: AppContainer get() = (applicationContext as WakeCoachApp).container

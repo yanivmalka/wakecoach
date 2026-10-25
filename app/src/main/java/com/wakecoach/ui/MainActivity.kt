@@ -16,6 +16,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.app.NotificationManagerCompat
@@ -26,7 +29,12 @@ import com.wakecoach.ui.edit.EditAlarmScreen
 import com.wakecoach.ui.evening.EveningScreen
 import com.wakecoach.ui.home.HomeScreen
 import com.wakecoach.ui.home.SettingsScreen
+import com.wakecoach.core.update.UpdateCheck
 import com.wakecoach.ui.ringing.RingingActivity
+import com.wakecoach.ui.update.UpdateBanner
+import com.wakecoach.ui.update.UpdateDialog
+import com.wakecoach.update.UpdateState
+import kotlinx.coroutines.launch
 import com.wakecoach.ui.theme.WakeCoachTheme
 
 sealed interface Screen {
@@ -39,6 +47,8 @@ sealed interface Screen {
 class MainActivity : ComponentActivity() {
     private val vm: MainViewModel by viewModels()
     private var screen by mutableStateOf<Screen>(Screen.Home)
+    // Bumped on every resume so permission-dependent UI re-reads system state after visiting Settings.
+    private var resumes by mutableIntStateOf(0)
     private val askPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -61,6 +71,31 @@ class MainActivity : ComponentActivity() {
                 }
                 BackHandler(enabled = screen != Screen.Home) { screen = Screen.Home }
 
+                val updater = container.updater
+                val update by updater.state.collectAsStateWithLifecycle()
+                var showUpdate by remember { mutableStateOf(false) }
+                val scope = rememberCoroutineScope()
+                // Quiet check on open, at most every few hours; the banner appears only if there is something new.
+                LaunchedEffect(Unit) {
+                    val s = container.settings.current()
+                    val now = System.currentTimeMillis()
+                    if (s.autoCheckUpdates && UpdateCheck.dueForAutoCheck(s.lastUpdateCheckMs, now)) {
+                        updater.check()
+                        container.settings.update { it.copy(lastUpdateCheckMs = now) }
+                    }
+                }
+                if (showUpdate) {
+                    UpdateDialog(
+                        state = update,
+                        needsInstallPermission = resumes.let { updater.needsInstallPermission() },
+                        onUpdate = {
+                            (update as? UpdateState.Available)?.let { scope.launch { updater.downloadAndInstall(it.release) } }
+                        },
+                        onGrantPermission = { startActivity(updater.installPermissionIntent()) },
+                        onDismiss = { showUpdate = false; updater.dismissError() },
+                    )
+                }
+
                 when (val s = screen) {
                     Screen.Home -> HomeScreen(
                         alarms = alarms,
@@ -72,6 +107,7 @@ class MainActivity : ComponentActivity() {
                         onToggle = vm::setEnabled,
                         onEvening = { screen = Screen.Evening },
                         onSettings = { screen = Screen.Settings },
+                        updateBanner = { UpdateBanner(update) { showUpdate = true } },
                     )
                     is Screen.Edit -> EditAlarmScreen(
                         initial = alarms.firstOrNull { it.id == s.alarmId },
@@ -94,10 +130,20 @@ class MainActivity : ComponentActivity() {
                         settings = settings,
                         onChange = vm::updateSettings,
                         onBack = { screen = Screen.Home },
+                        version = updater.installedVersion,
+                        onCheckUpdates = {
+                            showUpdate = true
+                            scope.launch { updater.check() }
+                        },
                     )
                 }
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        resumes++
     }
 
     override fun onNewIntent(intent: Intent) {

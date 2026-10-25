@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.wakecoach.ui.theme.ThemeMode
@@ -18,6 +19,8 @@ data class UserSettings(
     val sleepGoalMinutes: Int = 7 * 60 + 30,
     val bedtimeReminders: Boolean = true,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    val autoCheckUpdates: Boolean = true,
+    val lastUpdateCheckMs: Long = 0,
 )
 
 class SettingsRepository(private val context: Context) {
@@ -26,6 +29,8 @@ class SettingsRepository(private val context: Context) {
         val GOAL = intPreferencesKey("sleep_goal_minutes")
         val BEDTIME = booleanPreferencesKey("bedtime_reminders")
         val THEME = stringPreferencesKey("theme_mode")
+        val AUTO_UPDATE = booleanPreferencesKey("auto_check_updates")
+        val LAST_UPDATE_CHECK = longPreferencesKey("last_update_check")
     }
 
     val settings: Flow<UserSettings> = context.dataStore.data.map {
@@ -35,6 +40,8 @@ class SettingsRepository(private val context: Context) {
             bedtimeReminders = it[Keys.BEDTIME] ?: true,
             themeMode = it[Keys.THEME]?.let { name -> ThemeMode.entries.firstOrNull { m -> m.name == name } }
                 ?: ThemeMode.SYSTEM,
+            autoCheckUpdates = it[Keys.AUTO_UPDATE] ?: true,
+            lastUpdateCheckMs = it[Keys.LAST_UPDATE_CHECK] ?: 0,
         )
     }
 
@@ -47,6 +54,8 @@ class SettingsRepository(private val context: Context) {
             it[Keys.GOAL] = next.sleepGoalMinutes
             it[Keys.BEDTIME] = next.bedtimeReminders
             it[Keys.THEME] = next.themeMode.name
+            it[Keys.AUTO_UPDATE] = next.autoCheckUpdates
+            it[Keys.LAST_UPDATE_CHECK] = next.lastUpdateCheckMs
         }
     }
 }

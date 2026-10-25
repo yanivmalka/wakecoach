@@ -1,0 +1,96 @@
+name: Build APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: build-main
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      VERSION: 0.2.${{ github.run_number }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 30
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      # Every release must be signed with the same key or phones cannot update in place.
+      - name: Decode signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.SIGNING_KEYSTORE_B64 }}
+          SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ] || [ -z "$SIGNING_PASSWORD" ]; then
+            echo "Signing secrets SIGNING_KEYSTORE_B64 / SIGNING_PASSWORD are not set (Settings > Secrets and variables > Actions)." | tee build.log
+            exit 1
+          fi
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          echo "SIGNING_KEYSTORE_PATH=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+
+      - name: Test and build
+        shell: bash
+        env:
+          SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
+        run: |
+          set -o pipefail
+          ./gradlew --no-daemon --stacktrace :core:test :app:assembleRelease :app:lintRelease 2>&1 | tee build.log
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          cp app/build/outputs/apk/release/app-release.apk wakecoach.apk
+          {
+            echo "versionCode: $((100 + ${{ github.run_number }}))"
+            echo
+            git log --format='- %s' "$BEFORE..HEAD" 2>/dev/null || git log -n 5 --format='- %s'
+          } > notes.md
+          gh release create "v$VERSION" wakecoach.apk --title "WakeCoach $VERSION" --notes-file notes.md --latest
+
+      - name: Close build-failure issue
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for n in $(gh issue list --state open --label ci-failure --json number -q '.[].number'); do
+            gh issue close "$n" --comment "Build passed: v$VERSION"
+          done
+
+      # Build logs are posted to an issue so the failure can be read without access to the Actions UI.
+      - name: Report build failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo "Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            echo "Commit: ${{ github.sha }}"
+            echo
+            echo '```'
+            if [ -f build.log ]; then grep -E "^e: |error:|FAILED|What went wrong" -A3 build.log | head -n 80; echo '---- tail ----'; tail -n 120 build.log; else echo "No build log: the job failed before the build step."; fi
+            echo '```'
+          } > report.md
+          gh label create ci-failure --color B60205 --description "Automated CI build failure" --force
+          n=$(gh issue list --state open --label ci-failure --json number -q '.[0].number')
+          if [ -n "$n" ]; then
+            gh issue comment "$n" --body-file report.md
+          else
+            gh issue create --title "CI build failed" --label ci-failure --body-file report.md
+          fi
