@@ -23,6 +23,8 @@ data class AlarmEntity(
     /** [AlarmKind] name; stored as text so new kinds need no migration. Default must match MIGRATION_1_2. */
     @ColumnInfo(defaultValue = "WAKE")
     val kind: String = AlarmKind.WAKE.name,
+    /** Chosen sound ([com.wakecoach.core.audio.SoundRef.encode]); null = pick automatically. */
+    val soundUri: String? = null,
 ) {
     companion object {
         fun maskOf(days: Set<DayOfWeek>) = days.fold(0) { m, d -> m or (1 shl (d.value - 1)) }

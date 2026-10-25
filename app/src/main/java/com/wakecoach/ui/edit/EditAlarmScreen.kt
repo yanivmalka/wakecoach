@@ -43,6 +43,7 @@ import com.wakecoach.data.AlarmEntity
 import com.wakecoach.data.alarmKind
 import com.wakecoach.data.repeatDays
 import com.wakecoach.ui.components.DayCircles
+import com.wakecoach.ui.components.SoundPickerRow
 import com.wakecoach.ui.components.WheelPicker
 import com.wakecoach.ui.home.ThumbRow
 import com.wakecoach.ui.profileDescription
@@ -65,6 +66,7 @@ fun EditAlarmScreen(
     var profileId by remember { mutableStateOf(base.profileId) }
     var importance by remember { mutableIntStateOf(base.importance) }
     var label by remember { mutableStateOf(base.label) }
+    var soundUri by remember { mutableStateOf(base.soundUri) }
     val isReminder = kind == AlarmKind.REMINDER
     // A reminder without a label would ring with no idea what it is for.
     val canSave = !isReminder || label.isNotBlank()
@@ -117,6 +119,8 @@ fun EditAlarmScreen(
             }
 
             DayCircles(selected = days, onChange = { days = it }, modifier = Modifier.fillMaxWidth())
+
+            SoundPickerRow(stored = soundUri, onChange = { soundUri = it })
 
             if (!isReminder) {
                 Text(stringResource(R.string.profile), fontSize = 18.sp)
@@ -175,7 +179,7 @@ fun EditAlarmScreen(
                         base.copy(
                             hour = hour, minute = minute, daysMask = AlarmEntity.maskOf(days),
                             profileId = profileId, importance = importance, label = label.trim(),
-                            kind = kind.name, enabled = true,
+                            kind = kind.name, enabled = true, soundUri = soundUri,
                         )
                     )
                 },

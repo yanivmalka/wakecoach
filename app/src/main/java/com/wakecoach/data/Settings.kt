@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.wakecoach.ui.theme.ThemeMode
 import kotlinx.coroutines.flow.Flow
@@ -24,6 +25,9 @@ data class UserSettings(
     /** Samsung's "never sleeping apps" list cannot be read, so the user confirms it. */
     val samsungNeverSleepConfirmed: Boolean = false,
     val healthIntroShown: Boolean = false,
+    /** [com.wakecoach.core.content.QuoteCategory] keys shown in the morning; all by default. */
+    val quoteCategories: Set<String> = setOf("faith", "philosophy", "facts", "jokes"),
+    val recentQuoteIds: List<Int> = emptyList(),
 )
 
 class SettingsRepository(private val context: Context) {
@@ -36,6 +40,8 @@ class SettingsRepository(private val context: Context) {
         val LAST_UPDATE_CHECK = longPreferencesKey("last_update_check")
         val SAMSUNG_CONFIRMED = booleanPreferencesKey("samsung_never_sleep_confirmed")
         val HEALTH_INTRO = booleanPreferencesKey("health_intro_shown")
+        val QUOTE_CATEGORIES = stringSetPreferencesKey("quote_categories")
+        val RECENT_QUOTES = stringPreferencesKey("recent_quotes")
     }
 
     val settings: Flow<UserSettings> = context.dataStore.data.map {
@@ -49,6 +55,8 @@ class SettingsRepository(private val context: Context) {
             lastUpdateCheckMs = it[Keys.LAST_UPDATE_CHECK] ?: 0,
             samsungNeverSleepConfirmed = it[Keys.SAMSUNG_CONFIRMED] ?: false,
             healthIntroShown = it[Keys.HEALTH_INTRO] ?: false,
+            quoteCategories = it[Keys.QUOTE_CATEGORIES] ?: UserSettings().quoteCategories,
+            recentQuoteIds = it[Keys.RECENT_QUOTES].orEmpty().split(',').mapNotNull(String::toIntOrNull),
         )
     }
 
@@ -65,6 +73,8 @@ class SettingsRepository(private val context: Context) {
             it[Keys.LAST_UPDATE_CHECK] = next.lastUpdateCheckMs
             it[Keys.SAMSUNG_CONFIRMED] = next.samsungNeverSleepConfirmed
             it[Keys.HEALTH_INTRO] = next.healthIntroShown
+            it[Keys.QUOTE_CATEGORIES] = next.quoteCategories
+            it[Keys.RECENT_QUOTES] = next.recentQuoteIds.joinToString(",")
         }
     }
 }

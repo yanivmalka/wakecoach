@@ -58,12 +58,16 @@ class RingingActivity : ComponentActivity() {
                 BackHandler { }
 
                 val s = state
-                // Read a reminder's label aloud once, after the sound has had a moment to wake the user.
+                // Speak once the sound has had a moment to wake the user: a reminder's label, or for a
+                // wake-up the morning line. The ring ducks under the voice.
                 LaunchedEffect(s?.request?.firstRingAt, s?.request?.snoozeCount) {
-                    if (s != null && s.kind.isNudge && s.label.isNotBlank()) {
-                        delay(2_000)
-                        (speaker ?: Speaker(this@RingingActivity).also { speaker = it }).speak(s.label)
-                    }
+                    if (s == null) return@LaunchedEffect
+                    val lines = if (s.kind.isNudge) listOf(s.label)
+                    else listOfNotNull(s.message, s.quote?.let { q -> listOf(q.text, q.source).filter(String::isNotBlank).joinToString(". ") })
+                    if (lines.all(String::isBlank)) return@LaunchedEffect
+                    delay(if (s.kind.isNudge) 2_000 else 8_000)
+                    val voice = speaker ?: Speaker(this@RingingActivity) { controller.duck(it) }.also { speaker = it }
+                    lines.forEach(voice::speak)
                 }
                 if (s == null) {
                     // The UI can open before the service has loaded the alarm; give it a moment,

@@ -3,6 +3,8 @@ package com.wakecoach.ui.home
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -36,6 +38,7 @@ import com.wakecoach.ui.theme.BigTouch
 import com.wakecoach.ui.theme.ThemeMode
 import kotlin.math.roundToInt
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SettingsScreen(
     settings: UserSettings,
@@ -95,6 +98,24 @@ fun SettingsScreen(
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(stringResource(R.string.bedtime_reminders), fontSize = 18.sp, modifier = Modifier.weight(1f))
             Switch(checked = settings.bedtimeReminders, onCheckedChange = { b -> onChange { it.copy(bedtimeReminders = b) } })
+        }
+
+        Text(stringResource(R.string.morning_content), fontSize = 18.sp)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            listOf(
+                "faith" to R.string.content_faith,
+                "philosophy" to R.string.content_philosophy,
+                "facts" to R.string.content_facts,
+                "jokes" to R.string.content_jokes,
+            ).forEach { (key, label) ->
+                val on = key in settings.quoteCategories
+                FilterChip(
+                    selected = on,
+                    onClick = { onChange { it.copy(quoteCategories = if (on) it.quoteCategories - key else it.quoteCategories + key) } },
+                    label = { Text(stringResource(label), fontSize = 16.sp) },
+                    modifier = Modifier.heightIn(min = 48.dp),
+                )
+            }
         }
 
         OutlinedButton(onClick = onOpenHealth, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {

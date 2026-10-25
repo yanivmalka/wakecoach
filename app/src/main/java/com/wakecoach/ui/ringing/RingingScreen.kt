@@ -82,6 +82,13 @@ fun RingingScreen(state: RingState, leftHanded: Boolean, onSnooze: (Int?) -> Uni
         if (state.label.isNotBlank()) Text(state.label, fontSize = 26.sp)
         Spacer(Modifier.height(16.dp))
         Text(state.message, fontSize = 20.sp, textAlign = TextAlign.Center)
+        state.quote?.let { q ->
+            Spacer(Modifier.height(14.dp))
+            Text("“${q.text}”", fontSize = 18.sp, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (q.source.isNotBlank()) {
+                Text(q.source, fontSize = 14.sp, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
         Spacer(Modifier.weight(1f))
 
         when {

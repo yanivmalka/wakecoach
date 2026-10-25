@@ -6,7 +6,10 @@ import android.content.Context
 import android.content.Intent
 import android.os.PowerManager
 import com.wakecoach.audio.AlarmPlayer
+import com.wakecoach.core.audio.SoundContext
+import com.wakecoach.core.audio.SoundSelector
 import com.wakecoach.core.challenge.Challenge
+import com.wakecoach.core.content.Quote
 import com.wakecoach.core.challenge.ChallengeGenerator
 import com.wakecoach.core.message.Lang
 import com.wakecoach.core.message.MessageComposer
@@ -16,6 +19,7 @@ import com.wakecoach.core.model.Profile
 import com.wakecoach.core.model.Profiles
 import com.wakecoach.core.model.SnoozePolicy
 import com.wakecoach.core.share.WakeStatusTracker
+import com.wakecoach.data.QuoteRepository
 import com.wakecoach.data.WakeRepository
 import com.wakecoach.data.alarmKind
 import com.wakecoach.data.WakeSessionEntity
@@ -24,6 +28,7 @@ import kotlinx.coroutines.flow.StateFlow
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalTime
 import java.util.Locale
 import kotlin.random.Random
 
@@ -34,6 +39,8 @@ data class RingState(
     val profile: Profile,
     val challenge: Challenge,
     val message: String,
+    /** Morning line (faith/philosophy/fact/joke) for wake-ups; null for reminders. */
+    val quote: Quote? = null,
 ) {
     val canSnooze: Boolean get() = profile.snooze.canSnooze(request.snoozeCount)
     val snoozeMinutes: Int get() = profile.snooze.minutesFor(request.snoozeCount)
@@ -45,6 +52,7 @@ class RingController(
     private val repository: WakeRepository,
     private val scheduler: AlarmScheduler,
     private val statusTracker: WakeStatusTracker,
+    private val quotes: QuoteRepository,
 ) {
     private val _state = MutableStateFlow<RingState?>(null)
     val state: StateFlow<RingState?> = _state
@@ -52,6 +60,9 @@ class RingController(
     private val player = AlarmPlayer(context)
     private val challenges = ChallengeGenerator()
     private var wakeLock: PowerManager.WakeLock? = null
+    // Alarms rung today, so consecutive reminders get different sounds.
+    private var ringDay: LocalDate? = null
+    private var ringsToday = 0
 
     suspend fun start(incoming: RingRequest) {
         if (_state.value != null) return // already ringing; rescheduleAll on dismiss re-arms the rest
@@ -84,13 +95,30 @@ class RingController(
             )
             val message = MessageComposer(lang).morningLine(repository.stats(), repository.priorityFor(LocalDate.now()))
             statusTracker.ringing(Instant.ofEpochMilli(now))
-            RingState(request, kind, alarm.label, profile, challenge, message)
+            RingState(request, kind, alarm.label, profile, challenge, message, quote = quotes.next(lang))
         }
 
+        val today = LocalDate.now()
+        if (ringDay != today) { ringDay = today; ringsToday = 0 }
+        val plan = SoundSelector.choose(
+            SoundContext(
+                kind = kind,
+                importance = alarm.importance,
+                hour = LocalTime.now().hour,
+                ringsToday = ringsToday++,
+                snoozeCount = request.snoozeCount,
+                hasEarlyEvent = false, // calendar arrives with the next 0.4 step
+                customUri = alarm.soundUri,
+            )
+        )
+
         acquireWakeLock()
-        player.start(state.profile)
+        player.start(state.profile, plan)
         _state.value = state
     }
+
+    /** Lowers the ring while a voice line plays over it. */
+    fun duck(on: Boolean) = player.duck(on)
 
     /**
      * Returns false when the profile has no snoozes left. Reminders may pass their own

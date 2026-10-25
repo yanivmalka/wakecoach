@@ -1,0 +1,42 @@
+{
+  "faith": [
+    {"text": "Rise like a lion in the morning to serve your Creator, so that you awaken the dawn.", "source": "Shulchan Aruch, Orach Chaim 1:1"},
+    {"text": "I thank You, living and eternal King, for You have returned my soul to me with compassion. Great is Your faithfulness.", "source": "Modeh Ani"},
+    {"text": "If I am not for myself, who will be for me? And if not now, when?", "source": "Hillel, Avot 1:14"},
+    {"text": "The day is short and the work is great.", "source": "Rabbi Tarfon, Avot 2:15"},
+    {"text": "Be bold as a leopard, light as an eagle, swift as a deer and strong as a lion to do the will of your Father in Heaven.", "source": "Yehuda ben Teima, Avot 5:20"},
+    {"text": "It is not your duty to finish the work, but neither are you free to neglect it.", "source": "Rabbi Tarfon, Avot 2:16"},
+    {"text": "Who is strong? One who conquers his inclination.", "source": "Ben Zoma, Avot 4:1"},
+    {"text": "How long will you lie there, sluggard? When will you rise from your sleep?", "source": "Proverbs 6:9"},
+    {"text": "This is the day the LORD has made; let us rejoice and be glad in it.", "source": "Psalms 118:24"},
+    {"text": "His mercies are new every morning; great is Your faithfulness.", "source": "Lamentations 3:23"}
+  ],
+  "philosophy": [
+    {"text": "At dawn, when you have trouble getting out of bed, tell yourself: I have to go to work, as a human being.", "source": "Marcus Aurelius, Meditations 5.1"},
+    {"text": "Waste no more time arguing what a good man should be. Be one.", "source": "Marcus Aurelius, Meditations 10.16"},
+    {"text": "While we are postponing, life speeds by.", "source": "Seneca, Letters"},
+    {"text": "First say to yourself what you would be; and then do what you have to do.", "source": "Epictetus"},
+    {"text": "The journey of a thousand miles begins with a single step.", "source": "Lao Tzu"},
+    {"text": "We are what we repeatedly do. Excellence, then, is not an act, but a habit.", "source": "Will Durant, on Aristotle"},
+    {"text": "Early to bed and early to rise makes a man healthy, wealthy and wise.", "source": "Benjamin Franklin"},
+    {"text": "Morning is when I am awake and there is a dawn in me.", "source": "Henry David Thoreau, Walden"}
+  ],
+  "facts": [
+    {"text": "Daylight in the first hour after waking helps set your body clock.", "source": ""},
+    {"text": "Morning grogginess (sleep inertia) usually fades within 15 to 30 minutes.", "source": ""},
+    {"text": "Adults need 7 to 9 hours of sleep a night.", "source": ""},
+    {"text": "A regular wake time, even on weekends, makes mornings easier.", "source": ""},
+    {"text": "Snoozing fragments the end of your sleep. Getting up at the first alarm usually feels better.", "source": ""},
+    {"text": "You lose water overnight just by breathing. A glass of water helps you wake up.", "source": ""},
+    {"text": "Screens before bed delay falling asleep.", "source": ""},
+    {"text": "Caffeine has a half-life of about five hours.", "source": ""}
+  ],
+  "jokes": [
+    {"text": "I told my alarm clock a joke. It didn't laugh, but it went off anyway.", "source": ""},
+    {"text": "Why did the alarm clock get promoted? It always showed up on time.", "source": ""},
+    {"text": "The snooze button is like a loan: you pay it back with interest in grogginess.", "source": ""},
+    {"text": "My bed is perfect every morning. Shame that's exactly when I have to leave it.", "source": ""},
+    {"text": "The early bird gets the worm, but the second mouse gets the cheese.", "source": ""},
+    {"text": "I tried to get up early. My bed objected, and it's bigger than me.", "source": ""}
+  ]
+}

@@ -129,4 +129,18 @@
     <string name="health_volume_body">Alarm volume is muted. Tap to raise it to 70%.</string>
     <string name="health_dnd">Do not disturb: total silence</string>
     <string name="health_dnd_body">Total silence mutes alarms too. Use \"Alarms only\" instead.</string>
+    <string name="sound">Sound</string>
+    <string name="sound_auto">Automatic (smart)</string>
+    <string name="sound_auto_desc">Soft before sunrise, brighter when it matters, louder if you don\'t get up</string>
+    <string name="sound_chime">Soft chimes</string>
+    <string name="sound_birds">Morning birds</string>
+    <string name="sound_rise">Bright rise</string>
+    <string name="sound_beep">Classic beeps</string>
+    <string name="sound_phone">From the phone…</string>
+    <string name="sound_phone_desc">Any ringtone, alarm or notification sound on the phone</string>
+    <string name="morning_content">Morning lines</string>
+    <string name="content_faith">Faith</string>
+    <string name="content_philosophy">Philosophy</string>
+    <string name="content_facts">Facts</string>
+    <string name="content_jokes">Jokes</string>
 </resources>

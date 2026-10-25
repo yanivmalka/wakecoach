@@ -130,4 +130,18 @@
     <string name="health_volume_body">עוצמת ההתראה מושתקת. הקש כדי להעלות ל-70%.</string>
     <string name="health_dnd">נא לא להפריע: שקט מוחלט</string>
     <string name="health_dnd_body">שקט מוחלט משתיק גם התראות. עדיף \"התראות בלבד\".</string>
+    <string name="sound">צליל</string>
+    <string name="sound_auto">אוטומטי (חכם)</string>
+    <string name="sound_auto_desc">רך לפני הזריחה, בהיר כשזה חשוב, חזק יותר אם לא קמים</string>
+    <string name="sound_chime">פעמונים רכים</string>
+    <string name="sound_birds">ציפורי בוקר</string>
+    <string name="sound_rise">עלייה בהירה</string>
+    <string name="sound_beep">צפצופים קלאסיים</string>
+    <string name="sound_phone">מהטלפון…</string>
+    <string name="sound_phone_desc">כל צלצול, שעון או צליל התראה שיש בטלפון</string>
+    <string name="morning_content">משפטים בבוקר</string>
+    <string name="content_faith">אמונה</string>
+    <string name="content_philosophy">פילוסופיה</string>
+    <string name="content_facts">עובדות</string>
+    <string name="content_jokes">בדיחות</string>
 </resources>

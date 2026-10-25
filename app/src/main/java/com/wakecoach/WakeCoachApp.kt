@@ -9,6 +9,7 @@ import com.wakecoach.alarm.RingController
 import com.wakecoach.core.share.StatusPublisher
 import com.wakecoach.core.share.WakeStatusTracker
 import com.wakecoach.data.AppDatabase
+import com.wakecoach.data.QuoteRepository
 import com.wakecoach.data.SettingsRepository
 import com.wakecoach.data.WakeRepository
 import com.wakecoach.health.HealthChecker
@@ -56,7 +57,8 @@ class AppContainer(context: Context) {
     val scheduler = AlarmScheduler(context, repository, settings)
     // Phase 5 swaps in a Firebase-backed publisher for approved buddies.
     val statusTracker = WakeStatusTracker(StatusPublisher.NONE)
-    val ringController = RingController(context, repository, scheduler, statusTracker)
+    val quotes = QuoteRepository(context, settings)
+    val ringController = RingController(context, repository, scheduler, statusTracker, quotes)
     val updater = Updater(context)
     val health = HealthChecker(context, scheduler)
 }
