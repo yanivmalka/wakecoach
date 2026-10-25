@@ -21,6 +21,9 @@ data class UserSettings(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val autoCheckUpdates: Boolean = true,
     val lastUpdateCheckMs: Long = 0,
+    /** Samsung's "never sleeping apps" list cannot be read, so the user confirms it. */
+    val samsungNeverSleepConfirmed: Boolean = false,
+    val healthIntroShown: Boolean = false,
 )
 
 class SettingsRepository(private val context: Context) {
@@ -31,6 +34,8 @@ class SettingsRepository(private val context: Context) {
         val THEME = stringPreferencesKey("theme_mode")
         val AUTO_UPDATE = booleanPreferencesKey("auto_check_updates")
         val LAST_UPDATE_CHECK = longPreferencesKey("last_update_check")
+        val SAMSUNG_CONFIRMED = booleanPreferencesKey("samsung_never_sleep_confirmed")
+        val HEALTH_INTRO = booleanPreferencesKey("health_intro_shown")
     }
 
     val settings: Flow<UserSettings> = context.dataStore.data.map {
@@ -42,6 +47,8 @@ class SettingsRepository(private val context: Context) {
                 ?: ThemeMode.SYSTEM,
             autoCheckUpdates = it[Keys.AUTO_UPDATE] ?: true,
             lastUpdateCheckMs = it[Keys.LAST_UPDATE_CHECK] ?: 0,
+            samsungNeverSleepConfirmed = it[Keys.SAMSUNG_CONFIRMED] ?: false,
+            healthIntroShown = it[Keys.HEALTH_INTRO] ?: false,
         )
     }
 
@@ -56,6 +63,8 @@ class SettingsRepository(private val context: Context) {
             it[Keys.THEME] = next.themeMode.name
             it[Keys.AUTO_UPDATE] = next.autoCheckUpdates
             it[Keys.LAST_UPDATE_CHECK] = next.lastUpdateCheckMs
+            it[Keys.SAMSUNG_CONFIRMED] = next.samsungNeverSleepConfirmed
+            it[Keys.HEALTH_INTRO] = next.healthIntroShown
         }
     }
 }

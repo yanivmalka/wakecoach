@@ -28,7 +28,8 @@ class AlarmScheduler(
     /** Re-arms every enabled alarm and the bedtime reminder. Safe to call any time. */
     suspend fun rescheduleAll() {
         val now = ZonedDateTime.now()
-        val alarms = repository.alarms.enabled()
+        // Test rows arm themselves via scheduleTest and are deleted when they ring.
+        val alarms = repository.alarms.enabled().filter { it.alarmKind != AlarmKind.TEST }
         alarms.forEach { schedule(it, now) }
         scheduleBedtime(alarms, now)
     }
@@ -38,6 +39,21 @@ class AlarmScheduler(
         val extras = RingRequest(alarm.id, at.toInstant().toEpochMilli(), firstRingAt = 0, snoozeCount = 0)
         setAlarmClock(at.toInstant().toEpochMilli(), ringIntent(alarm.id.toInt(), extras))
     }
+
+    /** Rings [alarm] (a TEST row) after [seconds], through the same path as a real alarm. */
+    fun scheduleTest(alarm: AlarmEntity, seconds: Int) {
+        val at = System.currentTimeMillis() + seconds * 1000L
+        setAlarmClock(at, ringIntent(alarm.id.toInt(), RingRequest(alarm.id, at, firstRingAt = 0, snoozeCount = 0)))
+    }
+
+    /**
+     * Whether the system still holds this alarm's PendingIntent. They vanish after a reboot or a
+     * force-stop if the boot receiver was blocked, which is exactly the silent failure to catch.
+     */
+    fun isArmed(alarm: AlarmEntity): Boolean = PendingIntent.getBroadcast(
+        context, alarm.id.toInt(), Intent(context, AlarmReceiver::class.java),
+        PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE,
+    ) != null
 
     fun cancel(alarm: AlarmEntity) {
         am.cancel(ringIntent(alarm.id.toInt(), null))

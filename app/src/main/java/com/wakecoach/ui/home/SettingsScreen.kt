@@ -43,6 +43,7 @@ fun SettingsScreen(
     onBack: () -> Unit,
     version: String,
     onCheckUpdates: () -> Unit,
+    onOpenHealth: () -> Unit,
 ) {
     Column(
         Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).safeDrawingPadding().padding(20.dp)
@@ -94,6 +95,10 @@ fun SettingsScreen(
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(stringResource(R.string.bedtime_reminders), fontSize = 18.sp, modifier = Modifier.weight(1f))
             Switch(checked = settings.bedtimeReminders, onCheckedChange = { b -> onChange { it.copy(bedtimeReminders = b) } })
+        }
+
+        OutlinedButton(onClick = onOpenHealth, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
+            Text("🔔 " + stringResource(R.string.health_menu), fontSize = 18.sp)
         }
 
         Text(stringResource(R.string.updates), fontSize = 18.sp)

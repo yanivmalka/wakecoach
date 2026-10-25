@@ -60,7 +60,6 @@
     <string name="done">Done</string>
     <string name="skip">Skip</string>
 
-    <string name="fullscreen_needed">Alarms may not show on screen. Tap to fix in settings</string>
     <string name="channel_alarm">Alarms</string>
     <string name="channel_coach">Bedtime and check-ins</string>
     <string name="notif_ringing">Alarm is ringing</string>
@@ -98,4 +97,36 @@
     <string name="version_n">Version %1$s</string>
     <string name="check_updates">Check for updates</string>
     <string name="auto_check_updates">Check automatically when opening</string>
+    <string name="health_title">Will my alarms ring?</string>
+    <string name="health_all_good">All set ✅ Your alarms will ring.</string>
+    <plurals name="health_problems">
+        <item quantity="one">1 thing may stop your alarms</item>
+        <item quantity="other">%1$d things may stop your alarms</item>
+    </plurals>
+    <string name="health_banner">⚠️ Alarms may not ring – tap to check</string>
+    <string name="health_menu">Alarm reliability check</string>
+    <string name="health_fix">Fix</string>
+    <string name="health_open">Open</string>
+    <string name="health_done_it">Done ✓</string>
+    <string name="health_test">🔔 Test alarm in 10 seconds</string>
+    <string name="health_test_scheduled">Test alarm coming… lock the screen</string>
+    <string name="health_test_label">Test alarm ✅ It works!</string>
+    <string name="health_notifications">Notifications</string>
+    <string name="health_notifications_body">Blocked: the alarm screen cannot open.</string>
+    <string name="health_fullscreen">Full-screen alarms</string>
+    <string name="health_fullscreen_body">Needed to show the alarm over the lock screen.</string>
+    <string name="health_exact">Exact alarms</string>
+    <string name="health_exact_body">Without it alarms can ring late.</string>
+    <string name="health_armed">Alarms registered</string>
+    <string name="health_armed_body">Some alarms are not armed in the system. Tap to re-arm.</string>
+    <string name="health_battery">Battery optimization</string>
+    <string name="health_battery_body">Android may delay alarms to save battery. Choose \"Allow\".</string>
+    <string name="health_background">Background activity</string>
+    <string name="health_background_body">The app is restricted in the background. Open Battery and allow.</string>
+    <string name="health_samsung">Samsung sleeping apps</string>
+    <string name="health_samsung_body">Battery → Background usage limits → Never sleeping apps → add WakeCoach.</string>
+    <string name="health_volume">Alarm volume</string>
+    <string name="health_volume_body">Alarm volume is muted. Tap to raise it to 70%.</string>
+    <string name="health_dnd">Do not disturb: total silence</string>
+    <string name="health_dnd_body">Total silence mutes alarms too. Use \"Alarms only\" instead.</string>
 </resources>

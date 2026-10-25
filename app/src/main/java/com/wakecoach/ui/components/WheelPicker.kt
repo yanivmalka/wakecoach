@@ -38,7 +38,7 @@ import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
-private const val VISIBLE = 5
+private const val VISIBLE = 3
 private const val LOOPS = 1000
 
 /**
@@ -127,8 +127,8 @@ fun WheelPicker(
                         fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Light,
                         color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.graphicsLayer {
-                            alpha = when (distance) { 0 -> 1f; 1 -> 0.55f; else -> 0.25f }
-                            val scale = when (distance) { 0 -> 1f; 1 -> 0.9f; else -> 0.8f }
+                            alpha = if (distance == 0) 1f else 0.45f
+                            val scale = if (distance == 0) 1f else 0.85f
                             scaleX = scale; scaleY = scale
                         },
                     )

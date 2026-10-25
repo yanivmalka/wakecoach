@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedButton
-import com.wakecoach.core.model.AlarmKind
 import com.wakecoach.ui.theme.BigTouch
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -56,7 +55,7 @@ import kotlin.math.roundToInt
 
 @Composable
 fun RingingScreen(state: RingState, leftHanded: Boolean, onSnooze: (Int?) -> Unit, onDismiss: () -> Unit) {
-    if (state.kind == AlarmKind.REMINDER) {
+    if (state.kind.isNudge) {
         ReminderScreen(state, onSnooze = { onSnooze(it) }, onDismiss = onDismiss)
         return
     }

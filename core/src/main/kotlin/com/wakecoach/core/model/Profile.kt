@@ -93,4 +93,13 @@ object Profiles {
 }
 
 /** WAKE runs the full wake-up flow; REMINDER is a daytime nudge (pick up the kids, leave work, call someone). */
-enum class AlarmKind { WAKE, REMINDER }
+enum class AlarmKind {
+    WAKE, REMINDER,
+
+    /** One-off ring from the "test alarm" button; behaves like a reminder and is deleted after it rings. */
+    TEST,
+    ;
+
+    /** Reminders and tests skip challenges, feedback and buddy status: they only need to be noticed. */
+    val isNudge: Boolean get() = this != WAKE
+}

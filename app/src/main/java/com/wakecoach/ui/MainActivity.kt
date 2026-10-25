@@ -2,12 +2,9 @@ package com.wakecoach.ui
 
 import com.wakecoach.data.profile
 import android.Manifest
-import android.app.NotificationManager
 import android.content.Intent
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
@@ -21,9 +18,16 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.core.app.NotificationManagerCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.wakecoach.R
 import com.wakecoach.container
+import com.wakecoach.core.health.AlarmHealth
+import com.wakecoach.core.health.HealthItem
+import com.wakecoach.core.model.AlarmKind
+import com.wakecoach.data.AlarmEntity
+import com.wakecoach.ui.health.HealthScreen
+import kotlinx.coroutines.delay
+import java.time.LocalTime
 import com.wakecoach.core.model.ChallengeType
 import com.wakecoach.ui.edit.EditAlarmScreen
 import com.wakecoach.ui.evening.EveningScreen
@@ -42,6 +46,7 @@ sealed interface Screen {
     data class Edit(val alarmId: Long?) : Screen
     data object Evening : Screen
     data object Settings : Screen
+    data object Health : Screen
 }
 
 class MainActivity : ComponentActivity() {
@@ -70,6 +75,20 @@ class MainActivity : ComponentActivity() {
                     if (ringing != null) startActivity(Intent(this@MainActivity, RingingActivity::class.java))
                 }
                 BackHandler(enabled = screen != Screen.Home) { screen = Screen.Home }
+
+                // Re-read phone settings on every resume (the user may be back from fixing one).
+                val checks = remember(resumes, alarms, settings.samsungNeverSleepConfirmed) {
+                    container.health.run(alarms.filter { it.enabled }, settings.samsungNeverSleepConfirmed)
+                }
+                val healthProblem = !AlarmHealth.summarize(checks).allGood
+                var testScheduled by remember { mutableStateOf(false) }
+                // First launch: walk the user through what can silence an alarm on this phone.
+                LaunchedEffect(Unit) {
+                    if (!container.settings.current().healthIntroShown) {
+                        screen = Screen.Health
+                        container.settings.update { it.copy(healthIntroShown = true) }
+                    }
+                }
 
                 val updater = container.updater
                 val update by updater.state.collectAsStateWithLifecycle()
@@ -100,8 +119,8 @@ class MainActivity : ComponentActivity() {
                     Screen.Home -> HomeScreen(
                         alarms = alarms,
                         leftHanded = settings.leftHanded,
-                        needsFullScreenPermission = !canUseFullScreenIntent() || !notificationsEnabled(),
-                        onFixFullScreen = ::openAlarmDisplaySettings,
+                        healthProblem = healthProblem,
+                        onOpenHealth = { screen = Screen.Health },
                         onAdd = { screen = Screen.Edit(null) },
                         onEdit = { screen = Screen.Edit(it.id) },
                         onToggle = vm::setEnabled,
@@ -131,10 +150,39 @@ class MainActivity : ComponentActivity() {
                         onChange = vm::updateSettings,
                         onBack = { screen = Screen.Home },
                         version = updater.installedVersion,
+                        onOpenHealth = { screen = Screen.Health },
                         onCheckUpdates = {
                             showUpdate = true
                             scope.launch { updater.check() }
                         },
+                    )
+                    Screen.Health -> HealthScreen(
+                        checks = checks,
+                        testScheduled = testScheduled,
+                        onFix = { item ->
+                            when (item) {
+                                HealthItem.ALARM_VOLUME -> { container.health.raiseAlarmVolume(); resumes++ }
+                                HealthItem.NEXT_ALARM_REGISTERED ->
+                                    scope.launch { container.scheduler.rescheduleAll(); resumes++ }
+                                else -> container.health.openFix(this@MainActivity, item)
+                            }
+                        },
+                        onConfirmSamsung = { vm.updateSettings { it.copy(samsungNeverSleepConfirmed = true) } },
+                        onTestAlarm = {
+                            testScheduled = true
+                            scope.launch {
+                                val now = LocalTime.now()
+                                val test = AlarmEntity(
+                                    hour = now.hour, minute = now.minute,
+                                    label = getString(R.string.health_test_label), kind = AlarmKind.TEST.name,
+                                )
+                                val id = container.repository.alarms.upsert(test)
+                                container.scheduler.scheduleTest(test.copy(id = id), seconds = 10)
+                                delay(20_000)
+                                testScheduled = false
+                            }
+                        },
+                        onBack = { screen = Screen.Home },
                     )
                 }
             }
@@ -153,21 +201,6 @@ class MainActivity : ComponentActivity() {
 
     private fun handle(intent: Intent?) {
         if (intent?.getBooleanExtra(EXTRA_OPEN_EVENING, false) == true) screen = Screen.Evening
-    }
-
-    private fun canUseFullScreenIntent(): Boolean =
-        Build.VERSION.SDK_INT < 34 || getSystemService(NotificationManager::class.java).canUseFullScreenIntent()
-
-    private fun notificationsEnabled() = NotificationManagerCompat.from(this).areNotificationsEnabled()
-
-    private fun openAlarmDisplaySettings() {
-        if (!notificationsEnabled()) {
-            startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, packageName))
-        } else if (Build.VERSION.SDK_INT >= 34) {
-            startActivity(
-                Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT, Uri.parse("package:$packageName"))
-            )
-        }
     }
 
     companion object {

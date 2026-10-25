@@ -14,6 +14,7 @@ import com.wakecoach.core.message.Phrases
 import com.wakecoach.core.model.AlarmKind
 import com.wakecoach.core.model.Profile
 import com.wakecoach.core.model.Profiles
+import com.wakecoach.core.model.SnoozePolicy
 import com.wakecoach.core.share.WakeStatusTracker
 import com.wakecoach.data.WakeRepository
 import com.wakecoach.data.alarmKind
@@ -58,7 +59,10 @@ class RingController(
 
         val now = System.currentTimeMillis()
         val request = if (incoming.firstRingAt == 0L) incoming.copy(firstRingAt = now) else incoming
-        if (request.snoozeCount == 0) {
+        if (alarm.alarmKind == AlarmKind.TEST) {
+            // A test ring is single-use; drop its row now so it never shows up or re-arms.
+            repository.alarms.delete(alarm)
+        } else if (request.snoozeCount == 0) {
             // Arm the next occurrence now, so a never-dismissed alarm still rings tomorrow.
             if (alarm.repeatDays.isEmpty()) repository.alarms.upsert(alarm.copy(enabled = false))
             else scheduler.schedule(alarm)
@@ -66,8 +70,10 @@ class RingController(
 
         val lang = Lang.of(Locale.getDefault())
         val kind = alarm.alarmKind
-        val state = if (kind == AlarmKind.REMINDER) {
-            RingState(request, kind, alarm.label, Profiles.REMINDER, Challenge.None, message = alarm.label)
+        val state = if (kind.isNudge) {
+            // A test has nothing to snooze to: its alarm row is already gone.
+            val profile = if (kind == AlarmKind.TEST) Profiles.REMINDER.copy(snooze = SnoozePolicy(0, 0)) else Profiles.REMINDER
+            RingState(request, kind, alarm.label, profile, Challenge.None, message = alarm.label)
         } else {
             val profile = alarm.profile
             val challenge = challenges.generate(
@@ -94,7 +100,7 @@ class RingController(
         val s = _state.value ?: return false
         if (!s.canSnooze) return false
         val next = s.request.copy(snoozeCount = s.request.snoozeCount + 1)
-        val length = if (s.kind == AlarmKind.REMINDER && minutes != null) minutes else s.snoozeMinutes
+        val length = if (s.kind.isNudge && minutes != null) minutes else s.snoozeMinutes
         scheduler.scheduleSnooze(next, length)
         if (s.kind == AlarmKind.WAKE) statusTracker.snoozed(Instant.now(), next.snoozeCount)
         stop()
@@ -105,7 +111,7 @@ class RingController(
     suspend fun dismiss(): Long? {
         val s = _state.value ?: return null
         stop()
-        if (s.kind == AlarmKind.REMINDER) {
+        if (s.kind.isNudge) {
             scheduler.rescheduleAll()
             return null
         }

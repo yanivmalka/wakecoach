@@ -11,6 +11,7 @@ import com.wakecoach.core.share.WakeStatusTracker
 import com.wakecoach.data.AppDatabase
 import com.wakecoach.data.SettingsRepository
 import com.wakecoach.data.WakeRepository
+import com.wakecoach.health.HealthChecker
 import com.wakecoach.update.Updater
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -57,6 +58,7 @@ class AppContainer(context: Context) {
     val statusTracker = WakeStatusTracker(StatusPublisher.NONE)
     val ringController = RingController(context, repository, scheduler, statusTracker)
     val updater = Updater(context)
+    val health = HealthChecker(context, scheduler)
 }
 
 val Context.container: AppContainer get() = (applicationContext as WakeCoachApp).container

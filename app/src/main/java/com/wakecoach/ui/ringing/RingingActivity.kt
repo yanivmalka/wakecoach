@@ -17,7 +17,6 @@ import com.wakecoach.alarm.AlarmService
 import com.wakecoach.alarm.RingRequest
 import com.wakecoach.audio.Speaker
 import com.wakecoach.container
-import com.wakecoach.core.model.AlarmKind
 import com.wakecoach.ui.feedback.FeedbackActivity
 import com.wakecoach.ui.theme.ThemeMode
 import com.wakecoach.ui.theme.WakeCoachTheme
@@ -61,7 +60,7 @@ class RingingActivity : ComponentActivity() {
                 val s = state
                 // Read a reminder's label aloud once, after the sound has had a moment to wake the user.
                 LaunchedEffect(s?.request?.firstRingAt, s?.request?.snoozeCount) {
-                    if (s != null && s.kind == AlarmKind.REMINDER && s.label.isNotBlank()) {
+                    if (s != null && s.kind.isNudge && s.label.isNotBlank()) {
                         delay(2_000)
                         (speaker ?: Speaker(this@RingingActivity).also { speaker = it }).speak(s.label)
                     }

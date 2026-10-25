@@ -4,9 +4,12 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.wakecoach.container
+import com.wakecoach.core.model.AlarmKind
 import com.wakecoach.data.AlarmEntity
+import com.wakecoach.data.alarmKind
 import com.wakecoach.data.UserSettings
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -17,7 +20,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val c = app.container
 
     val alarms: StateFlow<List<AlarmEntity>> =
-        c.repository.alarms.observeAll().stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+        c.repository.alarms.observeAll()
+            .map { list -> list.filter { it.alarmKind != AlarmKind.TEST } }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     val settings: StateFlow<UserSettings> =
         c.settings.settings.stateIn(viewModelScope, SharingStarted.Eagerly, UserSettings())

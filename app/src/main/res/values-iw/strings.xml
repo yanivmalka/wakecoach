@@ -60,7 +60,6 @@
     <string name="done">סיום</string>
     <string name="skip">דלג</string>
 
-    <string name="fullscreen_needed">ייתכן שההתראות לא יוצגו על המסך. הקש לתיקון בהגדרות</string>
     <string name="channel_alarm">התראות השכמה</string>
     <string name="channel_coach">תזכורות שינה ובדיקות</string>
     <string name="notif_ringing">ההתראה מצלצלת</string>
@@ -98,4 +97,37 @@
     <string name="version_n">גרסה %1$s</string>
     <string name="check_updates">בדוק עדכונים</string>
     <string name="auto_check_updates">בדוק אוטומטית בפתיחה</string>
+    <string name="health_title">האם ההתראות שלי יצלצלו?</string>
+    <string name="health_all_good">הכל מוכן ✅ ההתראות שלך יצלצלו.</string>
+    <plurals name="health_problems">
+        <item quantity="one">דבר אחד עלול למנוע צלצול</item>
+        <item quantity="two">%1$d דברים עלולים למנוע צלצול</item>
+        <item quantity="other">%1$d דברים עלולים למנוע צלצול</item>
+    </plurals>
+    <string name="health_banner">⚠️ ייתכן שההתראות לא יצלצלו – הקש לבדיקה</string>
+    <string name="health_menu">בדיקת אמינות ההתראות</string>
+    <string name="health_fix">תקן</string>
+    <string name="health_open">פתח</string>
+    <string name="health_done_it">עשיתי ✓</string>
+    <string name="health_test">🔔 התראת בדיקה בעוד 10 שניות</string>
+    <string name="health_test_scheduled">התראת בדיקה בדרך… נעל את המסך</string>
+    <string name="health_test_label">התראת בדיקה ✅ זה עובד!</string>
+    <string name="health_notifications">התראות</string>
+    <string name="health_notifications_body">חסומות: מסך הצלצול לא יכול להיפתח.</string>
+    <string name="health_fullscreen">התראות במסך מלא</string>
+    <string name="health_fullscreen_body">נדרש כדי שהצלצול יופיע מעל מסך הנעילה.</string>
+    <string name="health_exact">התראות מדויקות</string>
+    <string name="health_exact_body">בלי זה התראות עלולות לצלצל באיחור.</string>
+    <string name="health_armed">התראות רשומות במערכת</string>
+    <string name="health_armed_body">חלק מההתראות לא רשומות במערכת. הקש כדי לרשום מחדש.</string>
+    <string name="health_battery">אופטימיזציית סוללה</string>
+    <string name="health_battery_body">אנדרואיד עלול לעכב התראות כדי לחסוך בסוללה. בחר \"אפשר\".</string>
+    <string name="health_background">פעילות ברקע</string>
+    <string name="health_background_body">האפליקציה מוגבלת ברקע. פתח סוללה ואפשר.</string>
+    <string name="health_samsung">אפליקציות רדומות (סמסונג)</string>
+    <string name="health_samsung_body">סוללה ← הגבלות שימוש ברקע ← אפליקציות שלעולם לא נרדמות ← הוסף את WakeCoach.</string>
+    <string name="health_volume">עוצמת התראה</string>
+    <string name="health_volume_body">עוצמת ההתראה מושתקת. הקש כדי להעלות ל-70%.</string>
+    <string name="health_dnd">נא לא להפריע: שקט מוחלט</string>
+    <string name="health_dnd_body">שקט מוחלט משתיק גם התראות. עדיף \"התראות בלבד\".</string>
 </resources>

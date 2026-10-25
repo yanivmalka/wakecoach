@@ -61,8 +61,8 @@ private val HHMM = DateTimeFormatter.ofPattern("HH:mm")
 fun HomeScreen(
     alarms: List<AlarmEntity>,
     leftHanded: Boolean,
-    needsFullScreenPermission: Boolean,
-    onFixFullScreen: () -> Unit,
+    healthProblem: Boolean,
+    onOpenHealth: () -> Unit,
     onAdd: () -> Unit,
     onEdit: (AlarmEntity) -> Unit,
     onToggle: (AlarmEntity, Boolean) -> Unit,
@@ -90,9 +90,9 @@ fun HomeScreen(
             color = MaterialTheme.colorScheme.primary, fontSize = 20.sp,
             modifier = Modifier.align(Alignment.CenterHorizontally),
         )
-        if (needsFullScreenPermission) {
-            FilledTonalButton(onClick = onFixFullScreen, modifier = Modifier.fillMaxWidth().padding(top = 12.dp)) {
-                Text(stringResource(R.string.fullscreen_needed))
+        if (healthProblem) {
+            FilledTonalButton(onClick = onOpenHealth, modifier = Modifier.fillMaxWidth().padding(top = 12.dp)) {
+                Text(stringResource(R.string.health_banner))
             }
         }
         updateBanner()
