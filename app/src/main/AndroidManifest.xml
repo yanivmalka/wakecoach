@@ -46,6 +46,12 @@
             tools:targetApi="27" />
 
         <activity
+            android:name=".ui.ringing.FakeCallActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:launchMode="singleInstance" />
+
+        <activity
             android:name=".ui.feedback.FeedbackActivity"
             android:exported="false"
             android:excludeFromRecents="true" />

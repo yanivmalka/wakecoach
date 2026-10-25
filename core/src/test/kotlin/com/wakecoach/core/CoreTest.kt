@@ -179,3 +179,19 @@ class RiskLineTest {
         assertEquals(null, en.riskLine(listOf(com.wakecoach.core.adapt.RiskReason.SURPRISE), DayOfWeek.MONDAY))
     }
 }
+
+class NewChallengesTest {
+    private val gen = ChallengeGenerator(Random(9))
+
+    @Test fun generatesAndChecks() {
+        val b = gen.generate(ChallengeType.BREATHE, Intensity.FIRM, emptyList(), null) as Challenge.Breathe
+        assertEquals(5, b.rounds)
+        assertEquals(55, b.totalSec)
+        val v = gen.generate(ChallengeType.VOICE, Intensity.HARDCORE, emptyList(), null) as Challenge.Voice
+        assertEquals(4, v.minWords)
+        assertTrue(v.check("call the bank then gym"))
+        assertFalse(v.check("gym"))
+        val s = gen.generate(ChallengeType.STAND_UP, Intensity.GENTLE, emptyList(), null) as Challenge.StandUp
+        assertEquals(6, s.seconds)
+    }
+}

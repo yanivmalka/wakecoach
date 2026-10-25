@@ -85,8 +85,18 @@ def urgent_beep():
     return out + silence(0.35)
 
 
+def ringback():
+    # Phone ringback heard by the caller: 425 Hz, 1 s on, 3 s off (two rings).
+    out = []
+    for _ in range(2):
+        n = int(1.0 * RATE)
+        out += [math.sin(2 * math.pi * 425 * i / RATE) * min(1.0, i / 200, (n - i) / 200) for i in range(n)]
+        out += silence(3.0)
+    return out
+
+
 if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)
-    for fn in (chime_soft, birds_morning, rise_bright, urgent_beep):
+    for fn in (chime_soft, birds_morning, rise_bright, urgent_beep, ringback):
         write(fn.__name__, fn())
         print("wrote", fn.__name__)

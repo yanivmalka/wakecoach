@@ -23,6 +23,12 @@ class RecordingRepository(private val context: Context, private val dao: Recordi
         dao.delete(r)
     }
 
+    /** Family members who recorded something, with one of their clips, for the simulated call. */
+    suspend fun callers(): Map<String, RecordingEntity> = dao.all()
+        .filter { it.owner.isNotBlank() && File(it.path).exists() }
+        .groupBy { it.owner.trim() }
+        .mapValues { (_, clips) -> clips.random() }
+
     /** A clip to play over a ringing wake-up; skips files that went missing. */
     suspend fun randomForMorning(): RecordingEntity? = dao.all().filter { File(it.path).exists() }.randomOrNull()
 }

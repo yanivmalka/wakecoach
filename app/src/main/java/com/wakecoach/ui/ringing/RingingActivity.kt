@@ -17,6 +17,7 @@ import com.wakecoach.alarm.AlarmService
 import com.wakecoach.alarm.RingRequest
 import com.wakecoach.audio.Speaker
 import com.wakecoach.container
+import com.wakecoach.core.model.AlarmKind
 import com.wakecoach.ui.feedback.FeedbackActivity
 import com.wakecoach.ui.theme.ThemeMode
 import com.wakecoach.ui.theme.WakeCoachTheme
@@ -82,11 +83,24 @@ class RingingActivity : ComponentActivity() {
                     RingingScreen(
                         state = s,
                         leftHanded = leftHanded?.leftHanded ?: false,
-                        onSnooze = { minutes -> if (controller.snooze(minutes)) finish() },
+                        onSnooze = { minutes ->
+                            // A repeat snooze on a wake-up "calls" someone first (simulated only).
+                            val call = s.callName?.takeIf { s.kind == AlarmKind.WAKE && s.request.snoozeCount >= 1 }
+                            if (controller.snooze(minutes)) {
+                                if (call != null) startActivity(FakeCallActivity.intent(this@RingingActivity, call, s.callClip))
+                                finish()
+                            }
+                        },
+                        onSpeak = { text ->
+                            val voice = speaker ?: Speaker(this@RingingActivity) { controller.duck(it) }.also { speaker = it }
+                            voice.speak(text)
+                        },
                         onDismiss = {
                             scope.launch {
                                 val id = controller.dismiss()
-                                if (id != null) startActivity(FeedbackActivity.morningIntent(this@RingingActivity, id))
+                                if (id != null) {
+                                    startActivity(FeedbackActivity.morningIntent(this@RingingActivity, id, s.clockAheadMinutes))
+                                }
                                 finish()
                             }
                         },

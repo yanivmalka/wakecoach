@@ -36,6 +36,12 @@ data class UserSettings(
     val restDays: Set<Int> = setOf(6),
     /** Re-ring if the user seems to have gone back to sleep after dismissing. */
     val wakeCheck: Boolean = true,
+    /** Show the ring screen's clock a few minutes ahead (off by default). */
+    val clockAhead: Boolean = false,
+    /** Play a simulated call to a family member before a repeat snooze (no real call is made). */
+    val fakeCall: Boolean = true,
+    /** Extra names for the simulated call, besides people who recorded messages. */
+    val callNames: String = "",
 )
 
 class SettingsRepository(private val context: Context) {
@@ -54,6 +60,9 @@ class SettingsRepository(private val context: Context) {
         val GUARD = booleanPreferencesKey("guard_enabled")
         val REST_DAYS = stringSetPreferencesKey("rest_days")
         val WAKE_CHECK = booleanPreferencesKey("wake_check")
+        val CLOCK_AHEAD = booleanPreferencesKey("clock_ahead")
+        val FAKE_CALL = booleanPreferencesKey("fake_call")
+        val CALL_NAMES = stringPreferencesKey("call_names")
     }
 
     val settings: Flow<UserSettings> = context.dataStore.data.map {
@@ -73,6 +82,9 @@ class SettingsRepository(private val context: Context) {
             guardEnabled = it[Keys.GUARD] ?: true,
             restDays = it[Keys.REST_DAYS]?.mapNotNull(String::toIntOrNull)?.toSet() ?: UserSettings().restDays,
             wakeCheck = it[Keys.WAKE_CHECK] ?: true,
+            clockAhead = it[Keys.CLOCK_AHEAD] ?: false,
+            fakeCall = it[Keys.FAKE_CALL] ?: true,
+            callNames = it[Keys.CALL_NAMES].orEmpty(),
         )
     }
 
@@ -95,6 +107,9 @@ class SettingsRepository(private val context: Context) {
             it[Keys.GUARD] = next.guardEnabled
             it[Keys.REST_DAYS] = next.restDays.map(Int::toString).toSet()
             it[Keys.WAKE_CHECK] = next.wakeCheck
+            it[Keys.CLOCK_AHEAD] = next.clockAhead
+            it[Keys.FAKE_CALL] = next.fakeCall
+            it[Keys.CALL_NAMES] = next.callNames
         }
     }
 }

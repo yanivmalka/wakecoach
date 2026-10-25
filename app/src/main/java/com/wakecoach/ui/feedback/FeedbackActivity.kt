@@ -59,7 +59,12 @@ class FeedbackActivity : ComponentActivity() {
 
         var message by mutableStateOf("")
         if (!later) lifecycleScope.launch {
-            message = MessageComposer(Lang.of(Locale.getDefault())).morningLine(repo.stats(), repo.priorityFor(LocalDate.now()))
+            val ahead = intent.getIntExtra(EXTRA_CLOCK_AHEAD, 0)
+            message = listOfNotNull(
+                // Own up to the clock fib now that the user is up.
+                if (ahead > 0) getString(R.string.clock_ahead_reveal, ahead) else null,
+                MessageComposer(Lang.of(Locale.getDefault())).morningLine(repo.stats(), repo.priorityFor(LocalDate.now())),
+            ).joinToString("\n")
             // The alarm sound has stopped by now; say today's goal out loud.
             speaker = Speaker(this@FeedbackActivity).also { it.speak(message) }
         }
@@ -110,9 +115,11 @@ class FeedbackActivity : ComponentActivity() {
     companion object {
         private const val EXTRA_SESSION = "session_id"
         private const val EXTRA_LATER = "later"
+        private const val EXTRA_CLOCK_AHEAD = "clock_ahead"
 
-        fun morningIntent(context: Context, sessionId: Long) =
+        fun morningIntent(context: Context, sessionId: Long, clockAheadMinutes: Int = 0) =
             Intent(context, FeedbackActivity::class.java).putExtra(EXTRA_SESSION, sessionId)
+                .putExtra(EXTRA_CLOCK_AHEAD, clockAheadMinutes)
 
         fun laterIntent(context: Context, sessionId: Long) =
             morningIntent(context, sessionId).putExtra(EXTRA_LATER, true)

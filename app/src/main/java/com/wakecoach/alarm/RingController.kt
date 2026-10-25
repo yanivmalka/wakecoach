@@ -16,6 +16,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import com.wakecoach.audio.AlarmPlayer
 import com.wakecoach.core.adapt.AdaptiveEngine
 import com.wakecoach.core.wake.RelapseCheck
+import com.wakecoach.core.story.ReverseStory
 import com.wakecoach.core.adapt.MorningInput
 import com.wakecoach.core.audio.SoundContext
 import com.wakecoach.core.model.ChallengeType
@@ -59,6 +60,13 @@ data class RingState(
     val message: String,
     /** Morning line (faith/philosophy/fact/joke) for wake-ups; null for reminders. */
     val quote: Quote? = null,
+    /** Minutes the ring screen's clock runs ahead (requirement 11); revealed after getting up. */
+    val clockAheadMinutes: Int = 0,
+    /** "If you don't get up..." story told when the user reaches for snooze (requirement 10). */
+    val story: String? = null,
+    /** Who the simulated call "rings" on a repeat snooze (requirement 9), and their clip if any. */
+    val callName: String? = null,
+    val callClip: String? = null,
 ) {
     val canSnooze: Boolean get() = profile.snooze.canSnooze(request.snoozeCount)
     val snoozeMinutes: Int get() = profile.snooze.minutesFor(request.snoozeCount)
@@ -165,7 +173,9 @@ class RingController(
                 phrases = Phrases.forLang(lang),
                 registeredCode = null, // code registration arrives with the scanner in a later phase
             )
-            RingState(request, kind, alarm.label, profile, challenge, message = "")
+            // The clock fib is decided up front so the screen shows it from the first second.
+            val ahead = if (guarded("clock") { settings.current().clockAhead } == true) Random.nextInt(3, 10) else 0
+            RingState(request, kind, alarm.label, profile, challenge, message = "", clockAheadMinutes = ahead)
         }
 
         val event = if (kind == AlarmKind.WAKE) guarded("calendar") { calendar.firstMorningEvent(LocalDate.now()) } else null
@@ -201,9 +211,28 @@ class RingController(
             ).joinToString("\n")
         }
         val quote = guarded("quote") { quotes.next(lang) }
+        val story = guarded("story") {
+            ReverseStory(lang).tell(event?.start, event?.title, repository.priorityFor(LocalDate.now()))
+        }
+        // The simulated call only "dials" someone the user named or who recorded a message.
+        val call = guarded("call") {
+            val s = settings.current()
+            if (!s.fakeCall) null
+            else {
+                val callers = recordings.callers()
+                val typed = s.callNames.split(',', '\n').map { it.trim() }.filter { it.isNotEmpty() }
+                (callers.keys + typed).distinct().randomOrNull()?.let { name -> name to callers[name]?.path }
+            }
+        }
         _state.update { current ->
             if (current?.request != request) current
-            else current.copy(message = listOfNotNull(eventLine, morning).joinToString("\n"), quote = quote)
+            else current.copy(
+                message = listOfNotNull(eventLine, morning).joinToString("\n"),
+                quote = quote,
+                story = story,
+                callName = call?.first,
+                callClip = call?.second,
+            )
         }
         // Still in bed after a while? A familiar voice says why it matters. Sooner after a snooze.
         guarded("recording") {

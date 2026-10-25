@@ -19,12 +19,14 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -54,6 +56,8 @@ fun SettingsScreen(
     onCheckGuard: () -> Unit,
     onWakeCheckChange: (Boolean) -> Unit,
 ) {
+    // Kept locally so the cursor doesn't jump while each edit is saved.
+    var names by remember { mutableStateOf(settings.callNames) }
     Column(
         Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).safeDrawingPadding().padding(20.dp)
             .verticalScroll(rememberScrollState()),
@@ -136,6 +140,30 @@ fun SettingsScreen(
             else OutlinedButton(onClick = onConnectCalendar) { Text(stringResource(R.string.calendar_connect)) }
         }
 
+        Text(stringResource(R.string.tactics_title), fontSize = 20.sp)
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("📞 " + stringResource(R.string.fake_call_setting), fontSize = 18.sp)
+                Text(stringResource(R.string.fake_call_setting_explain), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Switch(checked = settings.fakeCall, onCheckedChange = { b -> onChange { it.copy(fakeCall = b) } })
+        }
+        if (settings.fakeCall) {
+            OutlinedTextField(
+                value = names,
+                onValueChange = { v -> names = v; onChange { it.copy(callNames = v) } },
+                label = { Text(stringResource(R.string.call_names)) },
+                placeholder = { Text(stringResource(R.string.call_names_hint)) },
+                singleLine = true, modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("⏩ " + stringResource(R.string.clock_ahead_setting), fontSize = 18.sp)
+                Text(stringResource(R.string.clock_ahead_explain), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Switch(checked = settings.clockAhead, onCheckedChange = { b -> onChange { it.copy(clockAhead = b) } })
+        }
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text("😴 " + stringResource(R.string.wake_check_setting), fontSize = 18.sp)

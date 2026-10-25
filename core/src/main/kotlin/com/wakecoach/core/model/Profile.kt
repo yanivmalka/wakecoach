@@ -8,7 +8,7 @@ enum class Intensity(val level: Int) {
     fun stepDown(): Intensity = entries.getOrElse(ordinal - 1) { this }
 }
 
-enum class ChallengeType { NONE, MATH, TYPE_PHRASE, SHAKE, STEPS, SCAN_CODE }
+enum class ChallengeType { NONE, MATH, TYPE_PHRASE, SHAKE, STEPS, SCAN_CODE, BREATHE, VOICE, STAND_UP }
 
 data class SnoozePolicy(
     val maxSnoozes: Int,
@@ -47,7 +47,7 @@ object Profiles {
     val BALANCED = Profile(
         id = "balanced",
         intensity = Intensity.BALANCED,
-        challenges = listOf(ChallengeType.MATH),
+        challenges = listOf(ChallengeType.MATH, ChallengeType.BREATHE),
         snooze = SnoozePolicy(maxSnoozes = 2, snoozeMinutes = 8, shrinkMinutes = 2),
         crescendoSeconds = 60,
         vibrate = true,
@@ -55,7 +55,7 @@ object Profiles {
     val FIRM = Profile(
         id = "firm",
         intensity = Intensity.FIRM,
-        challenges = listOf(ChallengeType.MATH, ChallengeType.TYPE_PHRASE, ChallengeType.SHAKE),
+        challenges = listOf(ChallengeType.MATH, ChallengeType.TYPE_PHRASE, ChallengeType.SHAKE, ChallengeType.VOICE),
         snooze = SnoozePolicy(maxSnoozes = 1, snoozeMinutes = 5),
         crescendoSeconds = 30,
         vibrate = true,
@@ -71,7 +71,7 @@ object Profiles {
     val HEAVY_SLEEPER = Profile(
         id = "heavy_sleeper",
         intensity = Intensity.HARDCORE,
-        challenges = listOf(ChallengeType.STEPS, ChallengeType.SCAN_CODE, ChallengeType.SHAKE),
+        challenges = listOf(ChallengeType.STEPS, ChallengeType.SCAN_CODE, ChallengeType.SHAKE, ChallengeType.STAND_UP),
         snooze = SnoozePolicy(maxSnoozes = 1, snoozeMinutes = 4),
         crescendoSeconds = 15,
         vibrate = true,

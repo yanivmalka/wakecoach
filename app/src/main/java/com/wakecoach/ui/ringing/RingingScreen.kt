@@ -54,7 +54,13 @@ import java.time.format.DateTimeFormatter
 import kotlin.math.roundToInt
 
 @Composable
-fun RingingScreen(state: RingState, leftHanded: Boolean, onSnooze: (Int?) -> Unit, onDismiss: () -> Unit) {
+fun RingingScreen(
+    state: RingState,
+    leftHanded: Boolean,
+    onSnooze: (Int?) -> Unit,
+    onDismiss: () -> Unit,
+    onSpeak: (String) -> Unit = {},
+) {
     if (state.kind.isNudge) {
         ReminderScreen(state, onSnooze = { onSnooze(it) }, onDismiss = onDismiss)
         return
@@ -62,6 +68,9 @@ fun RingingScreen(state: RingState, leftHanded: Boolean, onSnooze: (Int?) -> Uni
     var now by remember { mutableStateOf(LocalTime.now()) }
     LaunchedEffect(Unit) { while (true) { now = LocalTime.now(); delay(1000) } }
     var slid by remember { mutableStateOf(false) }
+    // The first reach for snooze tells the "what if you stay in bed" story instead (requirement 10).
+    var storyTold by remember { mutableStateOf(false) }
+    var showStory by remember { mutableStateOf(false) }
 
     Column(
         Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).safeDrawingPadding().padding(20.dp),
@@ -70,7 +79,16 @@ fun RingingScreen(state: RingState, leftHanded: Boolean, onSnooze: (Int?) -> Uni
         // Snooze sits at the top, on the side away from the thumb: reachable, but not by reflex.
         if (state.canSnooze) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = if (leftHanded) Arrangement.End else Arrangement.Start) {
-                TextButton(onClick = { onSnooze(null) }) {
+                TextButton(onClick = {
+                    val story = state.story
+                    if (story != null && !storyTold) {
+                        storyTold = true
+                        showStory = true
+                        onSpeak(story)
+                    } else {
+                        onSnooze(null)
+                    }
+                }) {
                     Text(stringResource(R.string.snooze_n, state.snoozeMinutes), fontSize = 16.sp)
                 }
             }
@@ -78,7 +96,10 @@ fun RingingScreen(state: RingState, leftHanded: Boolean, onSnooze: (Int?) -> Uni
             Spacer(Modifier.height(48.dp))
         }
 
-        BigDigits(now.format(DateTimeFormatter.ofPattern("HH:mm")), Modifier.fillMaxWidth().height(160.dp), color = MaterialTheme.colorScheme.primary)
+        BigDigits(
+            now.plusMinutes(state.clockAheadMinutes.toLong()).format(DateTimeFormatter.ofPattern("HH:mm")),
+            Modifier.fillMaxWidth().height(160.dp), color = MaterialTheme.colorScheme.primary,
+        )
         if (state.label.isNotBlank()) Text(state.label, fontSize = 26.sp)
         Spacer(Modifier.height(16.dp))
         Text(state.message, fontSize = 20.sp, textAlign = TextAlign.Center)
@@ -92,6 +113,11 @@ fun RingingScreen(state: RingState, leftHanded: Boolean, onSnooze: (Int?) -> Uni
         Spacer(Modifier.weight(1f))
 
         when {
+            showStory -> StoryPanel(
+                story = state.story.orEmpty(),
+                onUp = { showStory = false; if (state.challenge is Challenge.None) onDismiss() else slid = true },
+                onSnoozeAnyway = { showStory = false; onSnooze(null) },
+            )
             !slid -> SlideToStop(leftHanded) {
                 if (state.challenge is Challenge.None) onDismiss() else slid = true
             }
@@ -174,5 +200,17 @@ private fun ReminderScreen(state: RingState, onSnooze: (Int) -> Unit, onDismiss:
         Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth().heightIn(min = BigTouch + 16.dp)) {
             Text(stringResource(R.string.reminder_done), fontSize = 24.sp)
         }
+    }
+}
+
+/** The reverse story with the two honest choices: get up now, or snooze anyway. */
+@Composable
+private fun StoryPanel(story: String, onUp: () -> Unit, onSnoozeAnyway: () -> Unit) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        Text(story, fontSize = 19.sp, textAlign = TextAlign.Center)
+        Button(onClick = onUp, modifier = Modifier.fillMaxWidth().heightIn(min = BigTouch + 8.dp)) {
+            Text(stringResource(R.string.story_get_up), fontSize = 22.sp)
+        }
+        TextButton(onClick = onSnoozeAnyway) { Text(stringResource(R.string.story_snooze_anyway)) }
     }
 }

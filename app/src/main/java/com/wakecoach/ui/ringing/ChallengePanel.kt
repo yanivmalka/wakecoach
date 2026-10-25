@@ -58,6 +58,9 @@ fun ChallengePanel(challenge: Challenge, onSolved: () -> Unit) {
             is Challenge.Steps -> MotionChallenge(challenge.steps, steps = true, onSolved)
             // Scanner arrives in a later phase; the generator never produces this without a registered code.
             is Challenge.ScanCode -> MotionChallenge(30, steps = true, onSolved)
+            is Challenge.Breathe -> BreatheChallenge(challenge, onSolved)
+            is Challenge.Voice -> VoiceChallenge(challenge, onSolved)
+            is Challenge.StandUp -> StandUpChallenge(challenge.seconds, onSolved)
         }
     }
 }
