@@ -28,6 +28,8 @@ data class UserSettings(
     /** [com.wakecoach.core.content.QuoteCategory] keys shown in the morning; all by default. */
     val quoteCategories: Set<String> = setOf("faith", "philosophy", "facts", "jokes"),
     val recentQuoteIds: List<Int> = emptyList(),
+    /** Play a personal recording over a wake-up that is not answered. */
+    val playRecordings: Boolean = true,
 )
 
 class SettingsRepository(private val context: Context) {
@@ -42,6 +44,7 @@ class SettingsRepository(private val context: Context) {
         val HEALTH_INTRO = booleanPreferencesKey("health_intro_shown")
         val QUOTE_CATEGORIES = stringSetPreferencesKey("quote_categories")
         val RECENT_QUOTES = stringPreferencesKey("recent_quotes")
+        val PLAY_RECORDINGS = booleanPreferencesKey("play_recordings")
     }
 
     val settings: Flow<UserSettings> = context.dataStore.data.map {
@@ -57,6 +60,7 @@ class SettingsRepository(private val context: Context) {
             healthIntroShown = it[Keys.HEALTH_INTRO] ?: false,
             quoteCategories = it[Keys.QUOTE_CATEGORIES] ?: UserSettings().quoteCategories,
             recentQuoteIds = it[Keys.RECENT_QUOTES].orEmpty().split(',').mapNotNull(String::toIntOrNull),
+            playRecordings = it[Keys.PLAY_RECORDINGS] ?: true,
         )
     }
 
@@ -75,6 +79,7 @@ class SettingsRepository(private val context: Context) {
             it[Keys.HEALTH_INTRO] = next.healthIntroShown
             it[Keys.QUOTE_CATEGORIES] = next.quoteCategories
             it[Keys.RECENT_QUOTES] = next.recentQuoteIds.joinToString(",")
+            it[Keys.PLAY_RECORDINGS] = next.playRecordings
         }
     }
 }

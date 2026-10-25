@@ -26,6 +26,8 @@ import com.wakecoach.core.health.HealthItem
 import com.wakecoach.core.model.AlarmKind
 import com.wakecoach.data.AlarmEntity
 import com.wakecoach.ui.health.HealthScreen
+import com.wakecoach.ui.recordings.InterviewScreen
+import com.wakecoach.ui.recordings.RecordingsScreen
 import kotlinx.coroutines.delay
 import java.time.LocalTime
 import com.wakecoach.core.model.ChallengeType
@@ -47,6 +49,8 @@ sealed interface Screen {
     data object Evening : Screen
     data object Settings : Screen
     data object Health : Screen
+    data object Recordings : Screen
+    data object Interview : Screen
 }
 
 class MainActivity : ComponentActivity() {
@@ -151,10 +155,24 @@ class MainActivity : ComponentActivity() {
                         onBack = { screen = Screen.Home },
                         version = updater.installedVersion,
                         onOpenHealth = { screen = Screen.Health },
+                        onOpenRecordings = { screen = Screen.Recordings },
+                        calendarConnected = resumes.let { container.calendar.hasPermission() },
+                        onConnectCalendar = { askPermission.launch(Manifest.permission.READ_CALENDAR) },
                         onCheckUpdates = {
                             showUpdate = true
                             scope.launch { updater.check() }
                         },
+                    )
+                    Screen.Recordings -> RecordingsScreen(
+                        repo = container.recordings,
+                        playRecordings = settings.playRecordings,
+                        onPlayRecordingsChange = { on -> vm.updateSettings { it.copy(playRecordings = on) } },
+                        onInterview = { screen = Screen.Interview },
+                        onBack = { screen = Screen.Settings },
+                    )
+                    Screen.Interview -> InterviewScreen(
+                        repo = container.recordings,
+                        onDone = { screen = Screen.Recordings },
                     )
                     Screen.Health -> HealthScreen(
                         checks = checks,

@@ -28,6 +28,7 @@ class AlarmPlayer(private val context: Context) {
     /** Volume the ramp/stage wants; ducking scales it down temporarily. */
     private var targetVolume = MIN_VOLUME
     private var ducked = false
+    private var overlayPlayer: MediaPlayer? = null
 
     fun start(profile: Profile, plan: SoundPlan) = handler.post {
         stopNow()
@@ -47,6 +48,38 @@ class AlarmPlayer(private val context: Context) {
     }
 
     fun stop() = handler.post { stopNow() }
+
+    /**
+     * Plays a personal clip once over the ringing alarm after [delayMs], ducking the alarm
+     * while it speaks. Ignored if the alarm was stopped in the meantime.
+     */
+    fun overlay(file: java.io.File, delayMs: Long) = handler.post { later(delayMs) { playOverlay(file) } }
+
+    private fun playOverlay(file: java.io.File) {
+        if (player == null) return
+        val voice = runCatching {
+            MediaPlayer().apply {
+                setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_ALARM)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                        .build()
+                )
+                setDataSource(file.absolutePath)
+                prepare()
+            }
+        }.getOrNull() ?: return
+        overlayPlayer = voice
+        ducked = true
+        applyVolume()
+        voice.setOnCompletionListener {
+            it.release()
+            if (overlayPlayer === it) overlayPlayer = null
+            ducked = false
+            applyVolume()
+        }
+        voice.start()
+    }
 
     /** Lowers the alarm while a voice line or recording plays over it. */
     fun duck(on: Boolean) = handler.post {
@@ -123,6 +156,8 @@ class AlarmPlayer(private val context: Context) {
         pending.clear()
         player?.run { runCatching { stop() }; release() }
         player = null
+        overlayPlayer?.run { runCatching { stop() }; release() }
+        overlayPlayer = null
         ducked = false
         targetVolume = MIN_VOLUME
         vibrator().cancel()

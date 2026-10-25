@@ -18,6 +18,7 @@ import com.wakecoach.ui.ringing.RingingActivity
 import kotlinx.coroutines.launch
 import com.wakecoach.core.schedule.MorningDate
 import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 class AlarmReceiver : BroadcastReceiver() {
@@ -61,7 +62,11 @@ class BedtimeReceiver : BroadcastReceiver() {
             val c = context.container
             val priority = c.repository.priorityFor(MorningDate.upcoming(LocalDateTime.now()))
             val minutes = ((lightsOut - System.currentTimeMillis()) / 60_000).coerceAtLeast(0)
-            val text = MessageComposer(Lang.of(Locale.getDefault())).bedtimeLine(minutes, priority)
+            val event = c.calendar.firstMorningEvent(MorningDate.upcoming(LocalDateTime.now()))
+            val text = listOfNotNull(
+                MessageComposer(Lang.of(Locale.getDefault())).bedtimeLine(minutes, priority),
+                event?.let { context.getString(R.string.event_tomorrow, it.start.format(DateTimeFormatter.ofPattern("HH:mm")), it.title) },
+            ).joinToString("\n")
             val open = PendingIntent.getActivity(
                 context, 10,
                 Intent(context, MainActivity::class.java).putExtra(MainActivity.EXTRA_OPEN_EVENING, true),

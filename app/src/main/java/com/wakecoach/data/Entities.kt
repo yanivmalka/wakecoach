@@ -78,3 +78,19 @@ data class SessionWithFeedback(
     val tiredness: Int?,
     val laterTiredness: Int?,
 )
+
+/** A personal voice clip played over a wake-up alarm (requirement 7). */
+@Entity(tableName = "recordings")
+data class RecordingEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    /** Absolute path under filesDir/recordings. */
+    val path: String,
+    /** Who speaks: empty for the user, otherwise a family member's name ("Dad", "the kids"). */
+    val owner: String,
+    /** [RecordingPurpose] name. */
+    val purpose: String,
+    val durationMs: Long,
+    val createdAt: Long,
+)
+
+enum class RecordingPurpose { WHY, ENCOURAGE, WAKE_MESSAGE }

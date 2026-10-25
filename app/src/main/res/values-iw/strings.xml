@@ -144,4 +144,31 @@
     <string name="content_philosophy">פילוסופיה</string>
     <string name="content_facts">עובדות</string>
     <string name="content_jokes">בדיחות</string>
+    <string name="event_today">ב-%1$s: %2$s</string>
+    <string name="event_tomorrow">מחר ב-%1$s: %2$s</string>
+    <string name="calendar">יומן</string>
+    <string name="calendar_explain">האירוע הראשון של הבוקר מוצג ומוקרא בהשכמה, ומגביר את דחיפות ההתראה.</string>
+    <string name="calendar_connect">חבר</string>
+    <string name="rec_title">הקלטות אישיות</string>
+    <string name="rec_explain">אם לא קמת אחרי חצי דקה, אחת ההקלטות מושמעת מעל הצלצול. בקש מבני המשפחה להקליט לך מסר לבוקר.</string>
+    <string name="rec_play_on_alarm">השמע הקלטות בהשכמה</string>
+    <string name="rec_owner">מי מדבר?</string>
+    <string name="rec_owner_hint">ריק = אני, או למשל: אבא, הילדים</string>
+    <string name="rec_record">הקלט</string>
+    <string name="rec_stop">עצור</string>
+    <string name="rec_import">ייבוא</string>
+    <string name="rec_import_failed">לא הצלחתי לקרוא את קובץ השמע.</string>
+    <string name="rec_me">אני</string>
+    <string name="rec_purpose_why">למה זה חשוב</string>
+    <string name="rec_purpose_encourage">עידוד</string>
+    <string name="rec_purpose_message">מסר לבוקר</string>
+    <string name="interview_title">ראיון אישי</string>
+    <string name="interview_q_why">למה חשוב לך לקום בזמן?</string>
+    <string name="interview_hint_why">תגיד את זה במילים שלך. תשמע את זה בבקרים שקשה לקום.</string>
+    <string name="interview_q_hard">מה תגיד לעצמך כשקשה לקום?</string>
+    <string name="interview_hint_hard">משפט קצר, כמו מאמן.</string>
+    <string name="interview_q_family">בקש מבן משפחה להקליט לך מסר לבוקר</string>
+    <string name="interview_hint_family">תן לו את הטלפון. קודם כתוב את השם שלו.</string>
+    <string name="interview_saved">נשמר</string>
+    <string name="next">הבא</string>
 </resources>

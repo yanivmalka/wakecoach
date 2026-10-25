@@ -19,7 +19,11 @@ import com.wakecoach.core.model.Profile
 import com.wakecoach.core.model.Profiles
 import com.wakecoach.core.model.SnoozePolicy
 import com.wakecoach.core.share.WakeStatusTracker
+import com.wakecoach.R
+import com.wakecoach.data.CalendarRepository
 import com.wakecoach.data.QuoteRepository
+import com.wakecoach.data.RecordingRepository
+import com.wakecoach.data.SettingsRepository
 import com.wakecoach.data.WakeRepository
 import com.wakecoach.data.alarmKind
 import com.wakecoach.data.WakeSessionEntity
@@ -46,6 +50,8 @@ data class RingState(
     val snoozeMinutes: Int get() = profile.snooze.minutesFor(request.snoozeCount)
 }
 
+private val HHMM = java.time.format.DateTimeFormatter.ofPattern("HH:mm")
+
 /** Owns the currently ringing alarm: sound, wake lock, and the snooze/dismiss transitions. */
 class RingController(
     private val context: Context,
@@ -53,6 +59,9 @@ class RingController(
     private val scheduler: AlarmScheduler,
     private val statusTracker: WakeStatusTracker,
     private val quotes: QuoteRepository,
+    private val recordings: RecordingRepository,
+    private val calendar: CalendarRepository,
+    private val settings: SettingsRepository,
 ) {
     private val _state = MutableStateFlow<RingState?>(null)
     val state: StateFlow<RingState?> = _state
@@ -93,7 +102,12 @@ class RingController(
                 phrases = Phrases.forLang(lang),
                 registeredCode = null, // code registration arrives with the scanner in a later phase
             )
-            val message = MessageComposer(lang).morningLine(repository.stats(), repository.priorityFor(LocalDate.now()))
+            val event = calendar.firstMorningEvent(LocalDate.now())
+            val eventLine = event?.let { context.getString(R.string.event_today, it.start.format(HHMM), it.title) }
+            val message = listOfNotNull(
+                eventLine,
+                MessageComposer(lang).morningLine(repository.stats(), repository.priorityFor(LocalDate.now())),
+            ).joinToString("\n")
             statusTracker.ringing(Instant.ofEpochMilli(now))
             RingState(request, kind, alarm.label, profile, challenge, message, quote = quotes.next(lang))
         }
@@ -107,13 +121,20 @@ class RingController(
                 hour = LocalTime.now().hour,
                 ringsToday = ringsToday++,
                 snoozeCount = request.snoozeCount,
-                hasEarlyEvent = false, // calendar arrives with the next 0.4 step
+                hasEarlyEvent = kind == AlarmKind.WAKE && calendar.firstMorningEvent(LocalDate.now())
+                    ?.let { it.start.isBefore(LocalTime.of(10, 0)) } == true,
                 customUri = alarm.soundUri,
             )
         )
 
         acquireWakeLock()
         player.start(state.profile, plan)
+        // Still in bed after a while? A familiar voice says why it matters. Sooner after a snooze.
+        if (kind == AlarmKind.WAKE && settings.current().playRecordings) {
+            recordings.randomForMorning()?.let { clip ->
+                player.overlay(java.io.File(clip.path), if (request.snoozeCount > 0) 20_000L else 30_000L)
+            }
+        }
         _state.value = state
     }
 

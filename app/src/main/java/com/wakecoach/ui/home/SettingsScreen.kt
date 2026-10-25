@@ -47,6 +47,9 @@ fun SettingsScreen(
     version: String,
     onCheckUpdates: () -> Unit,
     onOpenHealth: () -> Unit,
+    onOpenRecordings: () -> Unit,
+    calendarConnected: Boolean,
+    onConnectCalendar: () -> Unit,
 ) {
     Column(
         Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).safeDrawingPadding().padding(20.dp)
@@ -116,6 +119,18 @@ fun SettingsScreen(
                     modifier = Modifier.heightIn(min = 48.dp),
                 )
             }
+        }
+
+        OutlinedButton(onClick = onOpenRecordings, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
+            Text("🎙 " + stringResource(R.string.rec_title), fontSize = 18.sp)
+        }
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("📅 " + stringResource(R.string.calendar), fontSize = 18.sp)
+                Text(stringResource(R.string.calendar_explain), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            if (calendarConnected) Text("✅", fontSize = 20.sp)
+            else OutlinedButton(onClick = onConnectCalendar) { Text(stringResource(R.string.calendar_connect)) }
         }
 
         OutlinedButton(onClick = onOpenHealth, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {

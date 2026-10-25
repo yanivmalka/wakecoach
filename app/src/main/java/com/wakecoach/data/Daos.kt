@@ -54,3 +54,18 @@ interface PriorityDao {
     @Query("SELECT * FROM priorities WHERE date = :date")
     suspend fun forDate(date: String): PriorityEntity?
 }
+
+@Dao
+interface RecordingDao {
+    @Query("SELECT * FROM recordings ORDER BY createdAt DESC")
+    fun observeAll(): Flow<List<RecordingEntity>>
+
+    @Query("SELECT * FROM recordings")
+    suspend fun all(): List<RecordingEntity>
+
+    @Insert
+    suspend fun insert(r: RecordingEntity): Long
+
+    @Delete
+    suspend fun delete(r: RecordingEntity)
+}
