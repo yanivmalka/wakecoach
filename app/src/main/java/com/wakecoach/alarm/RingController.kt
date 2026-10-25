@@ -174,7 +174,7 @@ class RingController(
                 registeredCode = null, // code registration arrives with the scanner in a later phase
             )
             // The clock fib is decided up front so the screen shows it from the first second.
-            val ahead = if (guarded("clock") { settings.current().clockAhead } == true) Random.nextInt(3, 10) else 0
+            val ahead = if (guarded("clock") { settings.current().clockAhead } == true) Random(request.firstRingAt).nextInt(3, 10) else 0
             RingState(request, kind, alarm.label, profile, challenge, message = "", clockAheadMinutes = ahead)
         }
 
@@ -284,13 +284,15 @@ class RingController(
         val s = _state.value ?: return null
         stop()
         if (s.kind.isNudge) {
-            // Answering "still awake?" is proof enough; a reminder has nothing more to do.
+            // Answering "still awake?" earns one more quiet check later; a reminder has nothing more to do.
+            if (s.request.mode == RingMode.ASK) armWakeCheck(s)
             scheduler.rescheduleAll()
             return null
         }
         // A re-ring after going back to sleep is the same morning: no new session or check-in,
         // but one more surprise check while re-rings remain.
         if (s.request.mode == RingMode.RELAPSE) {
+            guarded("status") { statusTracker.dismissed(Instant.now()) }
             armWakeCheck(s)
             scheduler.rescheduleAll()
             return null
@@ -315,7 +317,8 @@ class RingController(
     }
 
     private suspend fun armWakeCheck(s: RingState) {
-        if (s.kind != AlarmKind.WAKE || !WakeCheck.mayRingAgain(s.request)) return
+        val watched = s.kind == AlarmKind.WAKE || s.request.mode == RingMode.ASK
+        if (!watched || !WakeCheck.mayRingAgain(s.request)) return
         guarded("wake check") {
             if (settings.current().wakeCheck) {
                 wakeCheck.arm(s.request, scheduler, RelapseCheck.delayMinutes(s.profile.intensity))

@@ -19,6 +19,13 @@
     <!-- Allowed for alarm clocks: Doze and app standby must not delay the ring. -->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
+    <!-- Android 11+ package visibility: needed to find the speech recognizer for the voice challenge. -->
+    <queries>
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
+    </queries>
+
     <application
         android:name=".WakeCoachApp"
         android:label="@string/app_name"

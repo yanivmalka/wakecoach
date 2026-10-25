@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.wakecoach.R
+import com.wakecoach.alarm.RingMode
 import com.wakecoach.alarm.RingState
 import com.wakecoach.core.challenge.Challenge
 import com.wakecoach.ui.theme.BigDigits
@@ -60,6 +61,7 @@ fun RingingScreen(
     onSnooze: (Int?) -> Unit,
     onDismiss: () -> Unit,
     onSpeak: (String) -> Unit = {},
+    onDuck: (Boolean) -> Unit = {},
 ) {
     if (state.kind.isNudge) {
         ReminderScreen(state, onSnooze = { onSnooze(it) }, onDismiss = onDismiss)
@@ -80,7 +82,10 @@ fun RingingScreen(
         if (state.canSnooze) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = if (leftHanded) Arrangement.End else Arrangement.Start) {
                 TextButton(onClick = {
-                    val story = state.story
+                    // Only on the morning's first ring, and never over a challenge in progress.
+                    val story = state.story?.takeIf {
+                        state.request.snoozeCount == 0 && state.request.mode == RingMode.NORMAL && !slid
+                    }
                     if (story != null && !storyTold) {
                         storyTold = true
                         showStory = true
@@ -121,7 +126,7 @@ fun RingingScreen(
             !slid -> SlideToStop(leftHanded) {
                 if (state.challenge is Challenge.None) onDismiss() else slid = true
             }
-            else -> ChallengePanel(state.challenge, onSolved = onDismiss)
+            else -> ChallengePanel(state.challenge, onSolved = onDismiss, onDuck = onDuck)
         }
     }
 }

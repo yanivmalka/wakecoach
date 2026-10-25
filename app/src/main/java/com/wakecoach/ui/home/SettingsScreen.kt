@@ -56,8 +56,8 @@ fun SettingsScreen(
     onCheckGuard: () -> Unit,
     onWakeCheckChange: (Boolean) -> Unit,
 ) {
-    // Kept locally so the cursor doesn't jump while each edit is saved.
-    var names by remember { mutableStateOf(settings.callNames) }
+    // Null until the user types, so the saved names show even if settings load after the screen.
+    var names by remember { mutableStateOf<String?>(null) }
     Column(
         Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).safeDrawingPadding().padding(20.dp)
             .verticalScroll(rememberScrollState()),
@@ -150,7 +150,7 @@ fun SettingsScreen(
         }
         if (settings.fakeCall) {
             OutlinedTextField(
-                value = names,
+                value = names ?: settings.callNames,
                 onValueChange = { v -> names = v; onChange { it.copy(callNames = v) } },
                 label = { Text(stringResource(R.string.call_names)) },
                 placeholder = { Text(stringResource(R.string.call_names_hint)) },

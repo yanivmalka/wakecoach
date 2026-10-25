@@ -42,7 +42,7 @@ import com.wakecoach.ui.theme.BigTouch
 import kotlin.math.sqrt
 
 @Composable
-fun ChallengePanel(challenge: Challenge, onSolved: () -> Unit) {
+fun ChallengePanel(challenge: Challenge, onSolved: () -> Unit, onDuck: (Boolean) -> Unit = {}) {
     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp)) {
         when (challenge) {
             Challenge.None -> LaunchedEffect(Unit) { onSolved() }
@@ -59,7 +59,7 @@ fun ChallengePanel(challenge: Challenge, onSolved: () -> Unit) {
             // Scanner arrives in a later phase; the generator never produces this without a registered code.
             is Challenge.ScanCode -> MotionChallenge(30, steps = true, onSolved)
             is Challenge.Breathe -> BreatheChallenge(challenge, onSolved)
-            is Challenge.Voice -> VoiceChallenge(challenge, onSolved)
+            is Challenge.Voice -> VoiceChallenge(challenge, onSolved, onDuck)
             is Challenge.StandUp -> StandUpChallenge(challenge.seconds, onSolved)
         }
     }

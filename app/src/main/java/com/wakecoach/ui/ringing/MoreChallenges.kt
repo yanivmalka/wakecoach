@@ -89,25 +89,26 @@ fun BreatheChallenge(c: Challenge.Breathe, onSolved: () -> Unit) {
  * or the microphone isn't available, so the alarm is always solvable.
  */
 @Composable
-fun VoiceChallenge(c: Challenge.Voice, onSolved: () -> Unit) {
+fun VoiceChallenge(c: Challenge.Voice, onSolved: () -> Unit, onDuck: (Boolean) -> Unit = {}) {
     val context = LocalContext.current
     val question = stringResource(questionText(c.question))
     var answer by remember { mutableStateOf("") }
     var listening by remember { mutableStateOf(false) }
     var typed by remember { mutableStateOf(!SpeechRecognizer.isRecognitionAvailable(context)) }
     val recognizer = remember { if (typed) null else SpeechRecognizer.createSpeechRecognizer(context) }
-    DisposableEffect(Unit) { onDispose { recognizer?.destroy() } }
+    DisposableEffect(Unit) { onDispose { recognizer?.destroy(); if (listening) onDuck(false) } }
 
     fun listen() {
         val r = recognizer ?: return
         r.setRecognitionListener(object : RecognitionListener {
             override fun onResults(results: Bundle) {
                 listening = false
+                onDuck(false)
                 val text = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull().orEmpty()
                 answer = text
                 if (c.check(text)) onSolved()
             }
-            override fun onError(error: Int) { listening = false }
+            override fun onError(error: Int) { listening = false; onDuck(false) }
             override fun onReadyForSpeech(params: Bundle?) = Unit
             override fun onBeginningOfSpeech() = Unit
             override fun onRmsChanged(rmsdB: Float) = Unit
@@ -117,6 +118,8 @@ fun VoiceChallenge(c: Challenge.Voice, onSolved: () -> Unit) {
             override fun onEvent(eventType: Int, params: Bundle?) = Unit
         })
         listening = true
+        // Quiet the alarm so the microphone can hear the answer.
+        onDuck(true)
         r.startListening(
             Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
                 .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
@@ -175,7 +178,7 @@ fun StandUpChallenge(seconds: Int, onSolved: () -> Unit) {
             override fun onSensorChanged(e: SensorEvent) {
                 if (done) return
                 val (x, y, z) = e.values
-                val upright = y > 8.0f && abs(x) < 3.5f && abs(z) < 4.5f
+                val upright = y > 8.0f && abs(x) < 3.5f && abs(z) < 6.0f
                 if (!upright) { uprightSince = 0L; progress = 0f; return }
                 if (uprightSince == 0L) uprightSince = e.timestamp
                 val held = (e.timestamp - uprightSince) / 1_000_000_000f
@@ -185,6 +188,11 @@ fun StandUpChallenge(seconds: Int, onSolved: () -> Unit) {
             override fun onAccuracyChanged(s: Sensor?, a: Int) = Unit
         }
         val sensor = sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+        if (sensor == null) {
+            // No accelerometer: never leave an alarm that cannot be stopped.
+            onSolved()
+            return@DisposableEffect onDispose { }
+        }
         sm.registerListener(listener, sensor, SensorManager.SENSOR_DELAY_UI)
         onDispose { sm.unregisterListener(listener) }
     }

@@ -171,6 +171,9 @@ class MainActivity : ComponentActivity() {
                         onSave = {
                             if (ChallengeType.STEPS in it.profile.challenges && Build.VERSION.SDK_INT >= 29) {
                                 askPermission.launch(Manifest.permission.ACTIVITY_RECOGNITION)
+                            } else if (ChallengeType.VOICE in it.profile.challenges) {
+                                // Asked now, not over the lock screen at 6am.
+                                askPermission.launch(Manifest.permission.RECORD_AUDIO)
                             }
                             vm.save(it); screen = Screen.Home
                         },

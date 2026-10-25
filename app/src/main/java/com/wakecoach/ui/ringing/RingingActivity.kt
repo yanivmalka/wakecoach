@@ -14,6 +14,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.core.content.ContextCompat
 import com.wakecoach.alarm.AlarmService
+import com.wakecoach.alarm.RingMode
 import com.wakecoach.alarm.RingRequest
 import com.wakecoach.audio.Speaker
 import com.wakecoach.container
@@ -22,7 +23,9 @@ import com.wakecoach.ui.feedback.FeedbackActivity
 import com.wakecoach.ui.theme.ThemeMode
 import com.wakecoach.ui.theme.WakeCoachTheme
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /** Full-screen ring UI over the lock screen. */
 class RingingActivity : ComponentActivity() {
@@ -85,23 +88,34 @@ class RingingActivity : ComponentActivity() {
                         leftHanded = leftHanded?.leftHanded ?: false,
                         onSnooze = { minutes ->
                             // A repeat snooze on a wake-up "calls" someone first (simulated only).
-                            val call = s.callName?.takeIf { s.kind == AlarmKind.WAKE && s.request.snoozeCount >= 1 }
+                            val call = s.callName?.takeIf {
+                                s.kind == AlarmKind.WAKE && s.request.snoozeCount >= 1 && s.request.mode == RingMode.NORMAL
+                            }
                             if (controller.snooze(minutes)) {
                                 if (call != null) startActivity(FakeCallActivity.intent(this@RingingActivity, call, s.callClip))
                                 finish()
                             }
                         },
+                        onDuck = { controller.duck(it) },
                         onSpeak = { text ->
                             val voice = speaker ?: Speaker(this@RingingActivity) { controller.duck(it) }.also { speaker = it }
                             voice.speak(text)
                         },
                         onDismiss = {
-                            scope.launch {
+                            // Runs in the app scope: the screen may close (state goes null) while dismiss
+                            // still records the morning and arms the back-to-sleep check.
+                            val app = applicationContext
+                            val ahead = s.clockAheadMinutes
+                            container.appScope.launch {
                                 val id = controller.dismiss()
-                                if (id != null) {
-                                    startActivity(FeedbackActivity.morningIntent(this@RingingActivity, id, s.clockAheadMinutes))
+                                withContext(Dispatchers.Main) {
+                                    if (id != null) {
+                                        app.startActivity(
+                                            FeedbackActivity.morningIntent(app, id, ahead).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                        )
+                                    }
+                                    finish()
                                 }
-                                finish()
                             }
                         },
                     )

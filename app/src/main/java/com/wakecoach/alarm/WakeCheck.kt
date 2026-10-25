@@ -49,7 +49,9 @@ class WakeCheck(private val context: Context) {
         clear()
         val mode = when (RelapseCheck.decide(delta, interactive)) {
             RelapseVerdict.AWAKE -> return null
-            RelapseVerdict.RELAPSE -> RingMode.RELAPSE
+            // People often get up and leave the phone behind: the first re-ring only asks
+            // "still awake?"; a second check that still finds no movement rings in full.
+            RelapseVerdict.RELAPSE -> if (relapses == 0) RingMode.ASK else RingMode.RELAPSE
             RelapseVerdict.ASK -> RingMode.ASK
         }
         return RingRequest(
