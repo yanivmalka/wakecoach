@@ -49,7 +49,10 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val settings by vm.settings.collectAsStateWithLifecycle()
-            WakeCoachTheme(settings.themeMode) {
+            // Wait for the stored theme so a forced light/dark choice does not flash the system one.
+            val stored by container.settings.settings.collectAsStateWithLifecycle(null)
+            val mode = stored?.themeMode ?: return@setContent
+            WakeCoachTheme(mode) {
                 val alarms by vm.alarms.collectAsStateWithLifecycle()
                 val ringing by container.ringController.state.collectAsStateWithLifecycle()
                 // If notifications are blocked the full-screen intent never shows; open the ring UI from here.

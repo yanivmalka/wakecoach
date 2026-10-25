@@ -1,5 +1,8 @@
 package com.wakecoach.ui.theme
 
+import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.material3.ColorScheme
@@ -10,8 +13,10 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -78,7 +83,16 @@ fun ThemeMode.isDark(systemDark: Boolean) = when (this) {
  */
 @Composable
 fun WakeCoachTheme(mode: ThemeMode = ThemeMode.SYSTEM, content: @Composable () -> Unit) {
-    val scheme: ColorScheme = if (mode.isDark(isSystemInDarkTheme())) DarkColors else LightColors
+    val dark = mode.isDark(isSystemInDarkTheme())
+    val scheme: ColorScheme = if (dark) DarkColors else LightColors
+    // Status/nav bar icons follow the app theme, not the system one, so they stay readable
+    // when the user forces light or dark.
+    val activity = LocalContext.current as? ComponentActivity
+    LaunchedEffect(dark, activity) {
+        val transparent = android.graphics.Color.TRANSPARENT
+        val style = if (dark) SystemBarStyle.dark(transparent) else SystemBarStyle.light(transparent, transparent)
+        activity?.enableEdgeToEdge(statusBarStyle = style, navigationBarStyle = style)
+    }
     MaterialTheme(colorScheme = scheme) {
         Surface(color = scheme.background, contentColor = scheme.onBackground, content = content)
     }
