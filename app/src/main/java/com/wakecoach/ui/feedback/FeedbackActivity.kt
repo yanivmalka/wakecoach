@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -32,6 +33,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.wakecoach.R
 import com.wakecoach.audio.Speaker
@@ -39,7 +41,6 @@ import com.wakecoach.container
 import com.wakecoach.core.message.Lang
 import com.wakecoach.core.message.MessageComposer
 import com.wakecoach.ui.theme.BigTouch
-import com.wakecoach.ui.theme.Sun
 import com.wakecoach.ui.theme.WakeCoachTheme
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -63,8 +64,12 @@ class FeedbackActivity : ComponentActivity() {
             speaker = Speaker(this@FeedbackActivity).also { it.speak(message) }
         }
 
+        enableEdgeToEdge()
         setContent {
-            WakeCoachTheme {
+            val settings by container.settings.settings.collectAsStateWithLifecycle(null)
+            // Wait for the stored theme so the screen does not flash the wrong colors.
+            val mode = settings?.themeMode ?: return@setContent
+            WakeCoachTheme(mode) {
                 if (later) {
                     var tired by remember { mutableStateOf<Int?>(null) }
                     Screen(
@@ -128,7 +133,7 @@ private fun Screen(
     ) {
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(18.dp)) {
             Text(title, fontSize = 28.sp)
-            if (message.isNotBlank()) Text(message, fontSize = 20.sp, color = Sun)
+            if (message.isNotBlank()) Text(message, fontSize = 20.sp, color = MaterialTheme.colorScheme.primary)
             questions.forEachIndexed { i, (q, value) ->
                 Text(q, fontSize = 20.sp)
                 RatingRow(value) { onAnswer(i, it) }

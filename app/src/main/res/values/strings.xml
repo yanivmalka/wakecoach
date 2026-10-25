@@ -67,4 +67,19 @@
     <string name="notif_bedtime_title">Time to wind down</string>
     <string name="notif_followup_title">Quick tiredness check</string>
     <string name="notif_followup_text">Tap to rate how awake you are now</string>
+    <string name="theme">Appearance</string>
+    <string name="theme_system">System</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="hours">Hours</string>
+    <string name="minutes">Minutes</string>
+    <string name="days_workweek">Workdays</string>
+    <string name="days_every">Every day</string>
+    <string name="kind_wake">Wake-up</string>
+    <string name="kind_reminder">Reminder</string>
+    <string name="reminder_label">What to remind you?</string>
+    <string name="reminder_hint">e.g. Pick up the kids, leave work, call Mom</string>
+    <string name="remind_again_in">Remind me again in</string>
+    <string name="minutes_short">%1$d min</string>
+    <string name="reminder_done">Done</string>
 </resources>

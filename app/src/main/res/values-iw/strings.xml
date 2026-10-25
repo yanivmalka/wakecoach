@@ -67,4 +67,19 @@
     <string name="notif_bedtime_title">הגיע הזמן להירגע</string>
     <string name="notif_followup_title">בדיקת עייפות קצרה</string>
     <string name="notif_followup_text">הקש כדי לדרג כמה אתה ער עכשיו</string>
+    <string name="theme">מראה</string>
+    <string name="theme_system">לפי המערכת</string>
+    <string name="theme_light">בהיר</string>
+    <string name="theme_dark">כהה</string>
+    <string name="hours">שעות</string>
+    <string name="minutes">דקות</string>
+    <string name="days_workweek">ימי עבודה</string>
+    <string name="days_every">כל יום</string>
+    <string name="kind_wake">השכמה</string>
+    <string name="kind_reminder">תזכורת</string>
+    <string name="reminder_label">על מה להזכיר?</string>
+    <string name="reminder_hint">למשל: לאסוף את הילדים, לצאת מהעבודה, להתקשר לאמא</string>
+    <string name="remind_again_in">הזכר לי שוב בעוד</string>
+    <string name="minutes_short">%1$d ד\'</string>
+    <string name="reminder_done">בוצע</string>
 </resources>

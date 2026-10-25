@@ -39,7 +39,6 @@ import androidx.core.content.ContextCompat
 import com.wakecoach.R
 import com.wakecoach.core.challenge.Challenge
 import com.wakecoach.ui.theme.BigTouch
-import com.wakecoach.ui.theme.Sun
 import kotlin.math.sqrt
 
 @Composable
@@ -74,7 +73,7 @@ private fun AnswerChallenge(
     var input by remember { mutableStateOf("") }
     var wrong by remember { mutableStateOf(false) }
     Text(prompt, fontSize = 18.sp)
-    Text(shown, fontSize = 34.sp, color = Sun, textAlign = TextAlign.Center)
+    Text(shown, fontSize = 34.sp, color = MaterialTheme.colorScheme.primary, textAlign = TextAlign.Center)
     OutlinedTextField(
         value = input, onValueChange = { input = it; wrong = false },
         textStyle = TextStyle(fontSize = 28.sp, textAlign = TextAlign.Center),

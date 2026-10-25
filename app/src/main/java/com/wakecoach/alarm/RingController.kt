@@ -11,9 +11,12 @@ import com.wakecoach.core.challenge.ChallengeGenerator
 import com.wakecoach.core.message.Lang
 import com.wakecoach.core.message.MessageComposer
 import com.wakecoach.core.message.Phrases
+import com.wakecoach.core.model.AlarmKind
 import com.wakecoach.core.model.Profile
+import com.wakecoach.core.model.Profiles
 import com.wakecoach.core.share.WakeStatusTracker
 import com.wakecoach.data.WakeRepository
+import com.wakecoach.data.alarmKind
 import com.wakecoach.data.WakeSessionEntity
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,6 +28,7 @@ import kotlin.random.Random
 
 data class RingState(
     val request: RingRequest,
+    val kind: AlarmKind,
     val label: String,
     val profile: Profile,
     val challenge: Challenge,
@@ -61,36 +65,50 @@ class RingController(
         }
 
         val lang = Lang.of(Locale.getDefault())
-        val profile = alarm.profile
-        val challenge = challenges.generate(
-            type = challenges.pickType(profile.challenges),
-            intensity = profile.intensity,
-            phrases = Phrases.forLang(lang),
-            registeredCode = null, // code registration arrives with the scanner in a later phase
-        )
-        val message = MessageComposer(lang).morningLine(repository.stats(), repository.priorityFor(LocalDate.now()))
+        val kind = alarm.alarmKind
+        val state = if (kind == AlarmKind.REMINDER) {
+            RingState(request, kind, alarm.label, Profiles.REMINDER, Challenge.None, message = alarm.label)
+        } else {
+            val profile = alarm.profile
+            val challenge = challenges.generate(
+                type = challenges.pickType(profile.challenges),
+                intensity = profile.intensity,
+                phrases = Phrases.forLang(lang),
+                registeredCode = null, // code registration arrives with the scanner in a later phase
+            )
+            val message = MessageComposer(lang).morningLine(repository.stats(), repository.priorityFor(LocalDate.now()))
+            statusTracker.ringing(Instant.ofEpochMilli(now))
+            RingState(request, kind, alarm.label, profile, challenge, message)
+        }
 
         acquireWakeLock()
-        player.start(profile)
-        statusTracker.ringing(Instant.ofEpochMilli(now))
-        _state.value = RingState(request, alarm.label, profile, challenge, message)
+        player.start(state.profile)
+        _state.value = state
     }
 
-    /** Returns false when the profile has no snoozes left. */
-    fun snooze(): Boolean {
+    /**
+     * Returns false when the profile has no snoozes left. Reminders may pass their own
+     * [minutes]; wake alarms always use the profile's shrinking snooze.
+     */
+    fun snooze(minutes: Int? = null): Boolean {
         val s = _state.value ?: return false
         if (!s.canSnooze) return false
         val next = s.request.copy(snoozeCount = s.request.snoozeCount + 1)
-        scheduler.scheduleSnooze(next, s.snoozeMinutes)
-        statusTracker.snoozed(Instant.now(), next.snoozeCount)
+        val length = if (s.kind == AlarmKind.REMINDER && minutes != null) minutes else s.snoozeMinutes
+        scheduler.scheduleSnooze(next, length)
+        if (s.kind == AlarmKind.WAKE) statusTracker.snoozed(Instant.now(), next.snoozeCount)
         stop()
         return true
     }
 
-    /** Records the morning and returns the session id for the feedback screen. */
+    /** Records the morning and returns the session id for the feedback screen (null for reminders). */
     suspend fun dismiss(): Long? {
         val s = _state.value ?: return null
         stop()
+        if (s.kind == AlarmKind.REMINDER) {
+            scheduler.rescheduleAll()
+            return null
+        }
         val now = System.currentTimeMillis()
         val id = repository.recordSession(
             WakeSessionEntity(

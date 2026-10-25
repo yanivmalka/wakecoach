@@ -7,11 +7,13 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import com.wakecoach.core.model.AlarmKind
 import com.wakecoach.core.schedule.AlarmTimeCalculator
 import com.wakecoach.core.schedule.BedtimeCalculator
 import com.wakecoach.data.AlarmEntity
 import com.wakecoach.data.SettingsRepository
 import com.wakecoach.data.WakeRepository
+import com.wakecoach.data.alarmKind
 import com.wakecoach.ui.MainActivity
 import java.time.Duration
 import java.time.ZonedDateTime
@@ -65,8 +67,10 @@ class AlarmScheduler(
         val s = settings.current()
         if (!s.bedtimeReminders || alarms.isEmpty()) return
 
-        // Plan the night before each upcoming alarm and take the first reminder still ahead.
+        // Plan the night before each upcoming wake-up and take the first reminder still ahead.
+        // Daytime reminders do not define bedtime.
         val plan = alarms
+            .filter { it.alarmKind == AlarmKind.WAKE }
             .map { AlarmTimeCalculator.nextTrigger(it.time, it.repeatDays, now) }
             .map { BedtimeCalculator.plan(it, Duration.ofMinutes(s.sleepGoalMinutes.toLong())) }
             .filter { it.reminderAt.isAfter(now) }

@@ -11,6 +11,7 @@ import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.runtime.LaunchedEffect
@@ -45,10 +46,11 @@ class MainActivity : ComponentActivity() {
         handle(intent)
         if (Build.VERSION.SDK_INT >= 33) askPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
 
+        enableEdgeToEdge()
         setContent {
-            WakeCoachTheme {
+            val settings by vm.settings.collectAsStateWithLifecycle()
+            WakeCoachTheme(settings.themeMode) {
                 val alarms by vm.alarms.collectAsStateWithLifecycle()
-                val settings by vm.settings.collectAsStateWithLifecycle()
                 val ringing by container.ringController.state.collectAsStateWithLifecycle()
                 // If notifications are blocked the full-screen intent never shows; open the ring UI from here.
                 LaunchedEffect(ringing != null) {

@@ -148,3 +148,13 @@ class MorningDateTest {
         assertEquals(d.plusDays(1), com.wakecoach.core.schedule.MorningDate.upcoming(d.atTime(22, 0)))
     }
 }
+
+class ReminderProfileTest {
+    @Test fun reminderIsQuickAndUnchallenged() {
+        val r = Profiles.REMINDER
+        assertEquals(listOf(ChallengeType.NONE), r.challenges)
+        assertTrue(r.snooze.allowed)
+        // Reminders are not offered as a wake-up profile.
+        assertFalse(r in Profiles.all)
+    }
+}

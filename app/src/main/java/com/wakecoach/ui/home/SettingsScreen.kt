@@ -7,9 +7,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
@@ -29,15 +32,32 @@ import androidx.compose.ui.unit.sp
 import com.wakecoach.R
 import com.wakecoach.data.UserSettings
 import com.wakecoach.ui.theme.BigTouch
+import com.wakecoach.ui.theme.ThemeMode
 import kotlin.math.roundToInt
 
 @Composable
 fun SettingsScreen(settings: UserSettings, onChange: ((UserSettings) -> UserSettings) -> Unit, onBack: () -> Unit) {
     Column(
-        Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).safeDrawingPadding().padding(20.dp),
+        Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).safeDrawingPadding().padding(20.dp)
+            .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
         Text(stringResource(R.string.settings), fontSize = 28.sp)
+
+        Text(stringResource(R.string.theme), fontSize = 18.sp)
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            listOf(
+                ThemeMode.SYSTEM to R.string.theme_system,
+                ThemeMode.LIGHT to R.string.theme_light,
+                ThemeMode.DARK to R.string.theme_dark,
+            ).forEach { (mode, label) ->
+                FilterChip(
+                    selected = settings.themeMode == mode, onClick = { onChange { it.copy(themeMode = mode) } },
+                    label = { Text(stringResource(label), fontSize = 18.sp) },
+                    modifier = Modifier.heightIn(min = 48.dp),
+                )
+            }
+        }
 
         Text(stringResource(R.string.hand), fontSize = 18.sp)
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -69,7 +89,7 @@ fun SettingsScreen(settings: UserSettings, onChange: ((UserSettings) -> UserSett
             Switch(checked = settings.bedtimeReminders, onCheckedChange = { b -> onChange { it.copy(bedtimeReminders = b) } })
         }
 
-        Spacer(Modifier.weight(1f))
+        Spacer(Modifier.height(8.dp))
         Button(onClick = onBack, modifier = Modifier.fillMaxWidth().heightIn(min = BigTouch)) {
             Text(stringResource(R.string.done), fontSize = 20.sp)
         }

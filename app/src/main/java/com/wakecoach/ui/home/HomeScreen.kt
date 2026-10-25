@@ -41,12 +41,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.wakecoach.R
 import com.wakecoach.core.schedule.AlarmTimeCalculator
+import com.wakecoach.core.model.AlarmKind
 import com.wakecoach.data.AlarmEntity
+import com.wakecoach.data.alarmKind
 import com.wakecoach.ui.profileName
 import com.wakecoach.ui.theme.BigDigits
 import com.wakecoach.ui.theme.BigTouch
-import com.wakecoach.ui.theme.NightCard
-import com.wakecoach.ui.theme.Sun
 import kotlinx.coroutines.delay
 import java.time.Duration
 import java.time.LocalTime
@@ -86,7 +86,7 @@ fun HomeScreen(
                 val d = Duration.between(now, it)
                 stringResource(R.string.next_alarm_in, stringResource(R.string.duration_h_m, d.toHours(), d.toMinutes() % 60))
             } ?: stringResource(R.string.no_alarms),
-            color = Sun, fontSize = 20.sp,
+            color = MaterialTheme.colorScheme.primary, fontSize = 20.sp,
             modifier = Modifier.align(Alignment.CenterHorizontally),
         )
         if (needsFullScreenPermission) {
@@ -135,20 +135,22 @@ fun ThumbRow(leftHanded: Boolean, content: @Composable RowScope.() -> Unit) {
 @Composable
 private fun AlarmRow(alarm: AlarmEntity, onClick: () -> Unit, onToggle: (Boolean) -> Unit) {
     Row(
-        Modifier.fillMaxWidth().background(NightCard, RoundedCornerShape(20.dp)).clickable(onClick = onClick)
+        Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(20.dp)).clickable(onClick = onClick)
             .padding(horizontal = 20.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
+            val icon = if (alarm.alarmKind == AlarmKind.REMINDER) "🔔 " else "⏰ "
             Text(
-                LocalTime.of(alarm.hour, alarm.minute).format(HHMM), fontSize = 44.sp, fontWeight = FontWeight.Light,
-                color = if (alarm.enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                icon + LocalTime.of(alarm.hour, alarm.minute).format(HHMM), fontSize = 44.sp, fontWeight = FontWeight.Light,
+                color = if (alarm.enabled) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
             )
             val days = if (alarm.repeatDays.isEmpty()) stringResource(R.string.repeat_once)
             else alarm.repeatDays.sorted().joinToString(" ") { it.getDisplayName(TextStyle.SHORT, Locale.getDefault()) }
+            val profile = if (alarm.alarmKind == AlarmKind.REMINDER) "" else stringResource(profileName(alarm.profileId))
             Text(
-                listOf(alarm.label, days, stringResource(profileName(alarm.profileId))).filter { it.isNotBlank() }.joinToString(" · "),
-                fontSize = 14.sp,
+                listOf(alarm.label, days, profile).filter { it.isNotBlank() }.joinToString(" · "),
+                fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         Switch(checked = alarm.enabled, onCheckedChange = onToggle)

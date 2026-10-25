@@ -79,5 +79,18 @@ object Profiles {
 
     val all = listOf(GENTLE, BALANCED, FIRM, SOLDIER, HEAVY_SLEEPER)
 
+    /** Used for daytime reminders: clear sound right away, one tap to dismiss, generous snoozes. */
+    val REMINDER = Profile(
+        id = "reminder",
+        intensity = Intensity.GENTLE,
+        challenges = listOf(ChallengeType.NONE),
+        snooze = SnoozePolicy(maxSnoozes = 5, snoozeMinutes = 10),
+        crescendoSeconds = 3,
+        vibrate = true,
+    )
+
     fun byId(id: String): Profile = all.firstOrNull { it.id == id } ?: BALANCED
 }
+
+/** WAKE runs the full wake-up flow; REMINDER is a daytime nudge (pick up the kids, leave work, call someone). */
+enum class AlarmKind { WAKE, REMINDER }

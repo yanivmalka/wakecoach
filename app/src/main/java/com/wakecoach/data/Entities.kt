@@ -1,7 +1,9 @@
 package com.wakecoach.data
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.wakecoach.core.model.AlarmKind
 import com.wakecoach.core.model.Profile
 import com.wakecoach.core.model.Profiles
 import java.time.DayOfWeek
@@ -18,6 +20,9 @@ data class AlarmEntity(
     val importance: Int = 1,
     val label: String = "",
     val enabled: Boolean = true,
+    /** [AlarmKind] name; stored as text so new kinds need no migration. Default must match MIGRATION_1_2. */
+    @ColumnInfo(defaultValue = "WAKE")
+    val kind: String = AlarmKind.WAKE.name,
 ) {
     companion object {
         fun maskOf(days: Set<DayOfWeek>) = days.fold(0) { m, d -> m or (1 shl (d.value - 1)) }
@@ -29,6 +34,7 @@ val AlarmEntity.time: LocalTime get() = LocalTime.of(hour, minute)
 val AlarmEntity.repeatDays: Set<DayOfWeek>
     get() = DayOfWeek.entries.filter { daysMask and (1 shl (it.value - 1)) != 0 }.toSet()
 val AlarmEntity.profile: Profile get() = Profiles.byId(profileId)
+val AlarmEntity.alarmKind: AlarmKind get() = AlarmKind.entries.firstOrNull { it.name == kind } ?: AlarmKind.WAKE
 
 @Entity(tableName = "wake_sessions")
 data class WakeSessionEntity(

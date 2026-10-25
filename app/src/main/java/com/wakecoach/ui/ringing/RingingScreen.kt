@@ -13,6 +13,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedButton
+import com.wakecoach.core.model.AlarmKind
+import com.wakecoach.ui.theme.BigTouch
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
@@ -44,15 +49,17 @@ import com.wakecoach.R
 import com.wakecoach.alarm.RingState
 import com.wakecoach.core.challenge.Challenge
 import com.wakecoach.ui.theme.BigDigits
-import com.wakecoach.ui.theme.NightCard
-import com.wakecoach.ui.theme.Sun
 import kotlinx.coroutines.delay
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import kotlin.math.roundToInt
 
 @Composable
-fun RingingScreen(state: RingState, leftHanded: Boolean, onSnooze: () -> Unit, onDismiss: () -> Unit) {
+fun RingingScreen(state: RingState, leftHanded: Boolean, onSnooze: (Int?) -> Unit, onDismiss: () -> Unit) {
+    if (state.kind == AlarmKind.REMINDER) {
+        ReminderScreen(state, onSnooze = { onSnooze(it) }, onDismiss = onDismiss)
+        return
+    }
     var now by remember { mutableStateOf(LocalTime.now()) }
     LaunchedEffect(Unit) { while (true) { now = LocalTime.now(); delay(1000) } }
     var slid by remember { mutableStateOf(false) }
@@ -64,7 +71,7 @@ fun RingingScreen(state: RingState, leftHanded: Boolean, onSnooze: () -> Unit, o
         // Snooze sits at the top, on the side away from the thumb: reachable, but not by reflex.
         if (state.canSnooze) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = if (leftHanded) Arrangement.End else Arrangement.Start) {
-                TextButton(onClick = onSnooze) {
+                TextButton(onClick = { onSnooze(null) }) {
                     Text(stringResource(R.string.snooze_n, state.snoozeMinutes), fontSize = 16.sp)
                 }
             }
@@ -72,7 +79,7 @@ fun RingingScreen(state: RingState, leftHanded: Boolean, onSnooze: () -> Unit, o
             Spacer(Modifier.height(48.dp))
         }
 
-        BigDigits(now.format(DateTimeFormatter.ofPattern("HH:mm")), Modifier.fillMaxWidth().height(160.dp), color = Sun)
+        BigDigits(now.format(DateTimeFormatter.ofPattern("HH:mm")), Modifier.fillMaxWidth().height(160.dp), color = MaterialTheme.colorScheme.primary)
         if (state.label.isNotBlank()) Text(state.label, fontSize = 26.sp)
         Spacer(Modifier.height(16.dp))
         Text(state.message, fontSize = 20.sp, textAlign = TextAlign.Center)
@@ -96,7 +103,7 @@ private fun SlideToStop(leftHanded: Boolean, onComplete: () -> Unit) {
     val direction = if (leftHanded) LayoutDirection.Rtl else LayoutDirection.Ltr
     CompositionLocalProvider(LocalLayoutDirection provides direction) {
         BoxWithConstraints(
-            Modifier.fillMaxWidth().height(80.dp).background(NightCard, RoundedCornerShape(40.dp)).padding(8.dp),
+            Modifier.fillMaxWidth().height(80.dp).background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(40.dp)).padding(8.dp),
         ) {
             val knob = 64.dp
             val maxPx = with(LocalDensity.current) { (maxWidth - knob).toPx() }
@@ -111,7 +118,7 @@ private fun SlideToStop(leftHanded: Boolean, onComplete: () -> Unit) {
                 Modifier
                     .offset { IntOffset(offset.roundToInt(), 0) }
                     .size(knob)
-                    .background(Sun, CircleShape)
+                    .background(MaterialTheme.colorScheme.primary, CircleShape)
                     .draggable(
                         orientation = Orientation.Horizontal,
                         state = rememberDraggableState { delta -> offset = (offset + sign * delta).coerceIn(0f, maxPx) },
@@ -121,6 +128,45 @@ private fun SlideToStop(leftHanded: Boolean, onComplete: () -> Unit) {
                         },
                     ),
             )
+        }
+    }
+}
+
+/** Daytime reminder: the label is the message, one tap to dismiss, pick a snooze length. */
+@Composable
+private fun ReminderScreen(state: RingState, onSnooze: (Int) -> Unit, onDismiss: () -> Unit) {
+    var now by remember { mutableStateOf(LocalTime.now()) }
+    LaunchedEffect(Unit) { while (true) { now = LocalTime.now(); delay(1000) } }
+
+    Column(
+        Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).safeDrawingPadding().padding(20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Spacer(Modifier.height(24.dp))
+        Text("🔔", fontSize = 56.sp)
+        BigDigits(now.format(DateTimeFormatter.ofPattern("HH:mm")), Modifier.fillMaxWidth().height(110.dp))
+        Spacer(Modifier.height(16.dp))
+        Text(
+            state.label, fontSize = 36.sp, textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        Spacer(Modifier.weight(1f))
+
+        if (state.canSnooze) {
+            Text(stringResource(R.string.remind_again_in), fontSize = 16.sp)
+            Row(
+                Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                listOf(5, 10, 15).forEach { m ->
+                    OutlinedButton(onClick = { onSnooze(m) }, modifier = Modifier.weight(1f).heightIn(min = BigTouch)) {
+                        Text(stringResource(R.string.minutes_short, m), fontSize = 18.sp)
+                    }
+                }
+            }
+        }
+        Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth().heightIn(min = BigTouch + 16.dp)) {
+            Text(stringResource(R.string.reminder_done), fontSize = 24.sp)
         }
     }
 }
