@@ -20,7 +20,7 @@ android {
         minSdk = 26
         targetSdk = 35
         versionCode = if (ciRun != null) 100 + ciRun else 2
-        versionName = if (ciRun != null) "0.3.$ciRun" else "0.3.0"
+        versionName = if (ciRun != null) "0.4.$ciRun" else "0.4.0"
     }
 
     signingConfigs {

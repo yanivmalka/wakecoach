@@ -117,21 +117,31 @@ fun WheelPicker(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.fillMaxWidth(),
         ) {
-            items(count * LOOPS) { index ->
-                val distance = abs(index - centred)
-                val selected = distance == 0
-                Box(Modifier.height(itemHeight).width(itemHeight * 2), contentAlignment = Alignment.Center) {
-                    Text(
-                        format(index % count),
-                        fontSize = if (selected) 40.sp else 30.sp,
-                        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Light,
-                        color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.graphicsLayer {
-                            alpha = if (distance == 0) 1f else 0.45f
-                            val scale = if (distance == 0) 1f else 0.85f
-                            scaleX = scale; scaleY = scale
+            items(count * LOOPS, key = { it }) { index ->
+                Box(
+                    Modifier
+                        .height(itemHeight)
+                        .width(itemHeight * 2)
+                        // Fade, shrink and tilt by the row's live distance from the centre. Reading the
+                        // scroll position here (draw phase) keeps scrolling free of recomposition.
+                        .graphicsLayer {
+                            val info = state.layoutInfo
+                            val row = info.visibleItemsInfo.firstOrNull { it.index == index }
+                            if (row != null) {
+                                val viewportCentre = (info.viewportStartOffset + info.viewportEndOffset) / 2f
+                                val rowCentre = row.offset + row.size / 2f
+                                val d = (abs(rowCentre - viewportCentre) / row.size).coerceIn(0f, 1.5f)
+                                alpha = 1f - 0.6f * (d / 1.5f)
+                                val scale = 1f - 0.18f * (d / 1.5f)
+                                scaleX = scale
+                                scaleY = scale
+                                rotationX = (rowCentre - viewportCentre) / row.size * -25f
+                            }
                         },
-                    )
+                    contentAlignment = Alignment.Center,
+                ) {
+                    // Fixed size and weight: changing them per row forces re-layout and makes the wheel jump.
+                    Text(format(index % count), fontSize = 40.sp, fontWeight = FontWeight.Medium)
                 }
             }
         }
