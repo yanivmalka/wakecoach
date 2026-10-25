@@ -26,6 +26,7 @@ import com.wakecoach.core.health.HealthItem
 import com.wakecoach.core.model.AlarmKind
 import com.wakecoach.data.AlarmEntity
 import com.wakecoach.ui.health.HealthScreen
+import com.wakecoach.ui.progress.ProgressScreen
 import com.wakecoach.ui.recordings.InterviewScreen
 import com.wakecoach.ui.recordings.RecordingsScreen
 import kotlinx.coroutines.delay
@@ -51,6 +52,7 @@ sealed interface Screen {
     data object Health : Screen
     data object Recordings : Screen
     data object Interview : Screen
+    data object Progress : Screen
 }
 
 class MainActivity : ComponentActivity() {
@@ -130,6 +132,7 @@ class MainActivity : ComponentActivity() {
                         onToggle = vm::setEnabled,
                         onEvening = { screen = Screen.Evening },
                         onSettings = { screen = Screen.Settings },
+                        onProgress = { screen = Screen.Progress },
                         updateBanner = { UpdateBanner(update) { showUpdate = true } },
                     )
                     is Screen.Edit -> EditAlarmScreen(
@@ -174,6 +177,7 @@ class MainActivity : ComponentActivity() {
                         repo = container.recordings,
                         onDone = { screen = Screen.Recordings },
                     )
+                    Screen.Progress -> ProgressScreen(container.repository, onBack = { screen = Screen.Home })
                     Screen.Health -> HealthScreen(
                         checks = checks,
                         testScheduled = testScheduled,

@@ -68,6 +68,7 @@ fun HomeScreen(
     onToggle: (AlarmEntity, Boolean) -> Unit,
     onEvening: () -> Unit,
     onSettings: () -> Unit,
+    onProgress: () -> Unit,
     updateBanner: @Composable () -> Unit = {},
 ) {
     var now by remember { mutableStateOf(ZonedDateTime.now()) }
@@ -107,6 +108,7 @@ fun HomeScreen(
         // Thumb zone: primary actions at the bottom, biggest button on the thumb's side.
         ThumbRow(leftHanded) {
             FilledTonalButton(onClick = onSettings, modifier = Modifier.size(BigTouch)) { Text("⚙", fontSize = 22.sp) }
+            FilledTonalButton(onClick = onProgress, modifier = Modifier.size(BigTouch)) { Text("📈", fontSize = 22.sp) }
             FilledTonalButton(onClick = onEvening, modifier = Modifier.heightIn(min = BigTouch)) {
                 Text(stringResource(R.string.evening_button), fontSize = 18.sp)
             }

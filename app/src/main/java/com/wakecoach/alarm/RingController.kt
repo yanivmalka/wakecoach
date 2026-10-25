@@ -14,7 +14,11 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.update
 import java.util.concurrent.atomic.AtomicBoolean
 import com.wakecoach.audio.AlarmPlayer
+import com.wakecoach.core.adapt.AdaptiveEngine
+import com.wakecoach.core.adapt.MorningInput
 import com.wakecoach.core.audio.SoundContext
+import com.wakecoach.core.model.ChallengeType
+import java.time.ZoneId
 import com.wakecoach.core.audio.SoundSelector
 import com.wakecoach.core.challenge.Challenge
 import com.wakecoach.core.content.Quote
@@ -123,14 +127,30 @@ class RingController(
         }
 
         val lang = Lang.of(Locale.getDefault())
+        // Requirement 4: read the user's recent mornings and decide how hard to push today.
+        val adapt = if (kind == AlarmKind.WAKE) guarded("adapt") {
+            AdaptiveEngine().plan(
+                MorningInput(
+                    history = repository.recentOutcomes(),
+                    zone = ZoneId.systemDefault(),
+                    day = LocalDate.now().dayOfWeek,
+                    importance = alarm.importance,
+                    baseIntensity = alarm.profile.intensity,
+                )
+            )
+        } else null
         val base = if (kind.isNudge) {
             // A test has nothing to snooze to: its alarm row is already gone.
             val profile = if (kind == AlarmKind.TEST) Profiles.REMINDER.copy(snooze = SnoozePolicy(0, 0)) else Profiles.REMINDER
             RingState(request, kind, alarm.label, profile, Challenge.None, message = alarm.label)
         } else {
-            val profile = alarm.profile
+            val profile = alarm.profile.let { p -> adapt?.let { p.copy(intensity = it.intensity) } ?: p }
+            // A surprise morning always has a challenge, even on a no-challenge profile.
+            val types = if (adapt?.surprise == true && profile.challenges.all { it == ChallengeType.NONE }) {
+                listOf(ChallengeType.MATH)
+            } else profile.challenges
             val challenge = challenges.generate(
-                type = challenges.pickType(profile.challenges),
+                type = challenges.pickType(types),
                 intensity = profile.intensity,
                 phrases = Phrases.forLang(lang),
                 registeredCode = null, // code registration arrives with the scanner in a later phase
@@ -144,7 +164,11 @@ class RingController(
         val plan = SoundSelector.choose(
             SoundContext(
                 kind = kind,
-                importance = alarm.importance,
+                // A risky morning sounds more urgent than the alarm's own setting.
+                importance = maxOf(
+                    alarm.importance,
+                    when { (adapt?.risk ?: 0) >= 80 -> 3; (adapt?.risk ?: 0) >= 60 -> 2; else -> 1 },
+                ),
                 hour = LocalTime.now().hour,
                 ringsToday = ringsToday++,
                 snoozeCount = request.snoozeCount,
@@ -159,7 +183,11 @@ class RingController(
         guarded("status") { statusTracker.ringing(Instant.ofEpochMilli(now)) }
         val eventLine = event?.let { context.getString(R.string.event_today, it.start.format(HHMM), it.title) }
         val morning = guarded("message") {
-            MessageComposer(lang).morningLine(repository.stats(), repository.priorityFor(LocalDate.now()))
+            val composer = MessageComposer(lang)
+            listOfNotNull(
+                adapt?.let { composer.riskLine(it.reasons, LocalDate.now().dayOfWeek) },
+                composer.morningLine(repository.stats(), repository.priorityFor(LocalDate.now())),
+            ).joinToString("\n")
         }
         val quote = guarded("quote") { quotes.next(lang) }
         _state.update { current ->

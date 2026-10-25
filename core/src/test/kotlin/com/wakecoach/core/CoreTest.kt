@@ -158,3 +158,14 @@ class ReminderProfileTest {
         assertFalse(r in Profiles.all)
     }
 }
+
+class RiskLineTest {
+    @Test fun explainsWithoutRevealingSurprise() {
+        val he = com.wakecoach.core.message.MessageComposer(Lang.HE)
+        val en = MessageComposer(Lang.EN)
+        val hard = listOf(com.wakecoach.core.adapt.RiskReason.HARD_WEEKDAY, com.wakecoach.core.adapt.RiskReason.RECENT_SNOOZES)
+        assertTrue(en.riskLine(hard, DayOfWeek.SUNDAY)!!.startsWith("Sundays"))
+        assertTrue(he.riskLine(hard, DayOfWeek.SUNDAY)!!.startsWith("ימי ראשון"), he.riskLine(hard, DayOfWeek.SUNDAY))
+        assertEquals(null, en.riskLine(listOf(com.wakecoach.core.adapt.RiskReason.SURPRISE), DayOfWeek.MONDAY))
+    }
+}

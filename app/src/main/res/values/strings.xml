@@ -170,4 +170,13 @@
     <string name="interview_hint_family">Hand them the phone. Write their name first.</string>
     <string name="interview_saved">Saved</string>
     <string name="next">Next</string>
+    <string name="progress_title">Your progress</string>
+    <string name="progress_empty">No mornings yet. After a few wake-ups your chart appears here.</string>
+    <string name="progress_streak">Streak without snooze</string>
+    <string name="progress_best">Best streak</string>
+    <string name="progress_snoozes_week">Snoozes / morning this week</string>
+    <string name="progress_better">%1$s fewer snoozes per morning than last week 👏</string>
+    <string name="progress_worse">A bit more snoozing than last week. Tomorrow is a new chance.</string>
+    <string name="progress_chart_snoozes">Snoozes per morning, by week</string>
+    <string name="progress_chart_minutes">Minutes from first ring to up, by week</string>
 </resources>

@@ -1,6 +1,9 @@
 package com.wakecoach.core.message
 
+import com.wakecoach.core.adapt.RiskReason
 import com.wakecoach.core.feedback.FeedbackStats
+import java.time.DayOfWeek
+import java.time.format.TextStyle
 import java.util.Locale
 import kotlin.math.roundToInt
 import kotlin.random.Random
@@ -59,6 +62,27 @@ class MessageComposer(private val lang: Lang, private val random: Random = Rando
                 "$minutesUntilLightsOut minutes to lights out. Tomorrow morning starts tonight.",
             )
         }
+    }
+
+    /**
+     * One line explaining why this morning is tougher or easier, from [AdaptiveEngine] reasons.
+     * Surprises are never announced. Null when there is nothing worth saying.
+     */
+    fun riskLine(reasons: List<RiskReason>, day: DayOfWeek): String? = when {
+        RiskReason.HARD_WEEKDAY in reasons -> {
+            val name = day.getDisplayName(TextStyle.FULL, if (lang == Lang.HE) Locale("iw") else Locale.ENGLISH)
+            // Hebrew day names come as "יום ראשון"; the plural reads "ימי ראשון".
+            t("${name.replace("יום ", "ימי ")} קשים לך לאחרונה. היום אני לא מוותר.", "${name}s have been hard lately. Not giving up today.")
+        }
+        RiskReason.RECENT_SNOOZES in reasons ->
+            t("השבוע היו הרבה נודניקים. היום קמים בצלצול הראשון.", "Lots of snoozing this week. Today we get up on the first ring.")
+        RiskReason.SHORT_SLEEP in reasons ->
+            t("ישנת מעט הלילה. קום, שתה מים, וצא לאור.", "Short night. Get up, drink water and get some daylight.")
+        RiskReason.IMPORTANT_DAY in reasons ->
+            t("יום חשוב היום. זה הרגע להראות מה אתה שווה.", "Big day today. This is the moment that counts.")
+        RiskReason.GOOD_STREAK in reasons ->
+            t("רצף יפה. אל תשבור אותו.", "Nice streak. Don't break it.")
+        else -> null
     }
 
     private fun t(he: String, en: String) = if (lang == Lang.HE) he else en

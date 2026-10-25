@@ -171,4 +171,13 @@
     <string name="interview_hint_family">תן לו את הטלפון. קודם כתוב את השם שלו.</string>
     <string name="interview_saved">נשמר</string>
     <string name="next">הבא</string>
+    <string name="progress_title">ההתקדמות שלך</string>
+    <string name="progress_empty">עוד אין בקרים. אחרי כמה השכמות הגרף יופיע כאן.</string>
+    <string name="progress_streak">רצף בלי נודניק</string>
+    <string name="progress_best">הרצף הטוב ביותר</string>
+    <string name="progress_snoozes_week">נודניקים לבוקר השבוע</string>
+    <string name="progress_better">%1$s נודניקים פחות לבוקר מהשבוע שעבר 👏</string>
+    <string name="progress_worse">קצת יותר נודניקים מהשבוע שעבר. מחר הזדמנות חדשה.</string>
+    <string name="progress_chart_snoozes">נודניקים לבוקר, לפי שבוע</string>
+    <string name="progress_chart_minutes">דקות מהצלצול הראשון עד הקימה, לפי שבוע</string>
 </resources>

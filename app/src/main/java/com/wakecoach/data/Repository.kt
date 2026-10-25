@@ -19,7 +19,10 @@ class WakeRepository(private val db: AppDatabase) {
     suspend fun saveLaterTiredness(sessionId: Long, value: Int) =
         db.sessions().setLaterTiredness(sessionId, value)
 
-    suspend fun stats(): FeedbackStats = FeedbackStats.from(
+    suspend fun stats(): FeedbackStats = FeedbackStats.from(recentOutcomes())
+
+    /** Recent wake-ups with their check-in answers, newest first (up to 60). */
+    suspend fun recentOutcomes(): List<WakeOutcome> =
         db.sessions().recent().map { r ->
             WakeOutcome(
                 at = Instant.ofEpochMilli(r.firstRingAt),
@@ -30,7 +33,6 @@ class WakeRepository(private val db: AppDatabase) {
                 } else null,
             )
         }
-    )
 
     suspend fun priorityFor(date: LocalDate): String? = db.priorities().forDate(date.toString())?.text
 
