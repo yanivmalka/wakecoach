@@ -5,6 +5,14 @@ import com.wakecoach.data.profile
 import android.content.Context
 import android.content.Intent
 import android.os.PowerManager
+import android.util.Log
+import com.wakecoach.core.audio.BuiltinSound
+import com.wakecoach.core.audio.SoundPlan
+import com.wakecoach.core.audio.SoundRef
+import com.wakecoach.core.audio.SoundStage
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.update
+import java.util.concurrent.atomic.AtomicBoolean
 import com.wakecoach.audio.AlarmPlayer
 import com.wakecoach.core.audio.SoundContext
 import com.wakecoach.core.audio.SoundSelector
@@ -50,6 +58,7 @@ data class RingState(
     val snoozeMinutes: Int get() = profile.snooze.minutesFor(request.snoozeCount)
 }
 
+private const val TAG = "RingController"
 private val HHMM = java.time.format.DateTimeFormatter.ofPattern("HH:mm")
 
 /** Owns the currently ringing alarm: sound, wake lock, and the snooze/dismiss transitions. */
@@ -72,25 +81,49 @@ class RingController(
     // Alarms rung today, so consecutive reminders get different sounds.
     private var ringDay: LocalDate? = null
     private var ringsToday = 0
+    private val ringing = AtomicBoolean(false)
 
     suspend fun start(incoming: RingRequest) {
-        if (_state.value != null) return // already ringing; rescheduleAll on dismiss re-arms the rest
-        val alarm = repository.alarms.byId(incoming.alarmId) ?: return stop()
+        // Claim the ring at once: two alarms landing together must not both start.
+        if (!ringing.compareAndSet(false, true)) return
+        try {
+            startClaimed(incoming)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // Safety net: whatever broke while preparing, the alarm still sounds.
+            Log.e(TAG, "ring setup failed; ringing with defaults", e)
+            if (_state.value == null) {
+                val request = incoming.copy(firstRingAt = incoming.firstRingAt.takeIf { it != 0L } ?: System.currentTimeMillis())
+                ringWith(RingState(request, AlarmKind.WAKE, "", Profiles.BALANCED, Challenge.None, ""), fallbackPlan())
+            }
+        }
+    }
+
+    /**
+     * Order matters: load the alarm, start the sound, publish the screen state, and only then
+     * add the extras (message, quote, calendar, recording). Extras may fail; the ring may not.
+     */
+    private suspend fun startClaimed(incoming: RingRequest) {
+        val alarm = repository.alarms.byId(incoming.alarmId)
+        if (alarm == null) { stop(); return } // deleted meanwhile
 
         val now = System.currentTimeMillis()
         val request = if (incoming.firstRingAt == 0L) incoming.copy(firstRingAt = now) else incoming
-        if (alarm.alarmKind == AlarmKind.TEST) {
-            // A test ring is single-use; drop its row now so it never shows up or re-arms.
-            repository.alarms.delete(alarm)
-        } else if (request.snoozeCount == 0) {
-            // Arm the next occurrence now, so a never-dismissed alarm still rings tomorrow.
-            if (alarm.repeatDays.isEmpty()) repository.alarms.upsert(alarm.copy(enabled = false))
-            else scheduler.schedule(alarm)
+        val kind = alarm.alarmKind
+        guarded("re-arm") {
+            if (kind == AlarmKind.TEST) {
+                // A test ring is single-use; drop its row now so it never shows up or re-arms.
+                repository.alarms.delete(alarm)
+            } else if (request.snoozeCount == 0) {
+                // Arm the next occurrence now, so a never-dismissed alarm still rings tomorrow.
+                if (alarm.repeatDays.isEmpty()) repository.alarms.upsert(alarm.copy(enabled = false))
+                else scheduler.schedule(alarm)
+            }
         }
 
         val lang = Lang.of(Locale.getDefault())
-        val kind = alarm.alarmKind
-        val state = if (kind.isNudge) {
+        val base = if (kind.isNudge) {
             // A test has nothing to snooze to: its alarm row is already gone.
             val profile = if (kind == AlarmKind.TEST) Profiles.REMINDER.copy(snooze = SnoozePolicy(0, 0)) else Profiles.REMINDER
             RingState(request, kind, alarm.label, profile, Challenge.None, message = alarm.label)
@@ -102,16 +135,10 @@ class RingController(
                 phrases = Phrases.forLang(lang),
                 registeredCode = null, // code registration arrives with the scanner in a later phase
             )
-            val event = calendar.firstMorningEvent(LocalDate.now())
-            val eventLine = event?.let { context.getString(R.string.event_today, it.start.format(HHMM), it.title) }
-            val message = listOfNotNull(
-                eventLine,
-                MessageComposer(lang).morningLine(repository.stats(), repository.priorityFor(LocalDate.now())),
-            ).joinToString("\n")
-            statusTracker.ringing(Instant.ofEpochMilli(now))
-            RingState(request, kind, alarm.label, profile, challenge, message, quote = quotes.next(lang))
+            RingState(request, kind, alarm.label, profile, challenge, message = "")
         }
 
+        val event = if (kind == AlarmKind.WAKE) guarded("calendar") { calendar.firstMorningEvent(LocalDate.now()) } else null
         val today = LocalDate.now()
         if (ringDay != today) { ringDay = today; ringsToday = 0 }
         val plan = SoundSelector.choose(
@@ -121,21 +148,49 @@ class RingController(
                 hour = LocalTime.now().hour,
                 ringsToday = ringsToday++,
                 snoozeCount = request.snoozeCount,
-                hasEarlyEvent = kind == AlarmKind.WAKE && calendar.firstMorningEvent(LocalDate.now())
-                    ?.let { it.start.isBefore(LocalTime.of(10, 0)) } == true,
+                hasEarlyEvent = event?.start?.isBefore(LocalTime.of(10, 0)) == true,
                 customUri = alarm.soundUri,
             )
         )
+        ringWith(base, plan)
+        if (kind != AlarmKind.WAKE) return
 
-        acquireWakeLock()
-        player.start(state.profile, plan)
+        // Extras for wake-ups. Each is optional and must never undo the ring.
+        guarded("status") { statusTracker.ringing(Instant.ofEpochMilli(now)) }
+        val eventLine = event?.let { context.getString(R.string.event_today, it.start.format(HHMM), it.title) }
+        val morning = guarded("message") {
+            MessageComposer(lang).morningLine(repository.stats(), repository.priorityFor(LocalDate.now()))
+        }
+        val quote = guarded("quote") { quotes.next(lang) }
+        _state.update { current ->
+            if (current?.request != request) current
+            else current.copy(message = listOfNotNull(eventLine, morning).joinToString("\n"), quote = quote)
+        }
         // Still in bed after a while? A familiar voice says why it matters. Sooner after a snooze.
-        if (kind == AlarmKind.WAKE && settings.current().playRecordings) {
-            recordings.randomForMorning()?.let { clip ->
-                player.overlay(java.io.File(clip.path), if (request.snoozeCount > 0) 20_000L else 30_000L)
+        guarded("recording") {
+            if (settings.current().playRecordings) {
+                recordings.randomForMorning()?.let { clip ->
+                    player.overlay(java.io.File(clip.path), if (request.snoozeCount > 0) 20_000L else 30_000L)
+                }
             }
         }
+    }
+
+    private fun ringWith(state: RingState, plan: SoundPlan) {
+        acquireWakeLock()
+        player.start(state.profile, plan)
         _state.value = state
+    }
+
+    private fun fallbackPlan() = SoundPlan(listOf(SoundStage(SoundRef.Builtin(BuiltinSound.URGENT_BEEP), 0)))
+
+    private inline fun <T> guarded(what: String, block: () -> T): T? = try {
+        block()
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        Log.w(TAG, "optional ring step '$what' failed", e)
+        null
     }
 
     /** Lowers the ring while a voice line plays over it. */
@@ -184,6 +239,7 @@ class RingController(
 
     private fun stop() {
         player.stop()
+        ringing.set(false)
         wakeLock?.takeIf { it.isHeld }?.release()
         wakeLock = null
         _state.value = null
@@ -191,6 +247,7 @@ class RingController(
     }
 
     private fun acquireWakeLock() {
+        wakeLock?.takeIf { it.isHeld }?.release()
         val pm = context.getSystemService(PowerManager::class.java)
         wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "WakeCoach:ring").apply {
             acquire(30 * 60_000L) // hard cap in case the user never responds

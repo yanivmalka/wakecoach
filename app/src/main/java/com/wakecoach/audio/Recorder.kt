@@ -19,14 +19,21 @@ class Recorder(private val context: Context) {
         stopAndDiscard()
         val out = File(dir(context), "rec_${System.currentTimeMillis()}.m4a")
         val r = if (Build.VERSION.SDK_INT >= 31) MediaRecorder(context) else @Suppress("DEPRECATION") MediaRecorder()
-        r.setAudioSource(MediaRecorder.AudioSource.MIC)
-        r.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
-        r.setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
-        r.setAudioEncodingBitRate(96_000)
-        r.setAudioSamplingRate(44_100)
-        r.setOutputFile(out.absolutePath)
-        r.prepare()
-        r.start()
+        try {
+            r.setAudioSource(MediaRecorder.AudioSource.MIC)
+            r.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+            r.setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+            r.setAudioEncodingBitRate(96_000)
+            r.setAudioSamplingRate(44_100)
+            r.setOutputFile(out.absolutePath)
+            r.prepare()
+            r.start()
+        } catch (e: Exception) {
+            // Microphone busy or unavailable: release it and leave no empty file behind.
+            r.release()
+            out.delete()
+            throw e
+        }
         recorder = r
         file = out
         startedAt = System.currentTimeMillis()

@@ -253,16 +253,20 @@ private class ClipPlayer {
         val same = playingId == clip.id
         stop()
         if (same) return
-        mp = runCatching {
-            MediaPlayer().apply {
-                setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).build())
-                setDataSource(clip.path)
-                prepare()
-                setOnCompletionListener { stop() }
-                start()
-            }
-        }.getOrNull()
-        if (mp != null) playingId = clip.id
+        val next = MediaPlayer()
+        try {
+            next.setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).build())
+            next.setDataSource(clip.path)
+            next.prepare()
+            // ClipPlayer.stop, not MediaPlayer.stop: release and clear the "playing" mark.
+            next.setOnCompletionListener { this@ClipPlayer.stop() }
+            next.start()
+        } catch (e: Exception) {
+            next.release()
+            return
+        }
+        mp = next
+        playingId = clip.id
     }
 
     fun stop() {

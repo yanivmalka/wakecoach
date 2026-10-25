@@ -62,10 +62,12 @@ class RingingActivity : ComponentActivity() {
                 // wake-up the morning line. The ring ducks under the voice.
                 LaunchedEffect(s?.request?.firstRingAt, s?.request?.snoozeCount) {
                     if (s == null) return@LaunchedEffect
-                    val lines = if (s.kind.isNudge) listOf(s.label)
-                    else listOfNotNull(s.message, s.quote?.let { q -> listOf(q.text, q.source).filter(String::isNotBlank).joinToString(". ") })
-                    if (lines.all(String::isBlank)) return@LaunchedEffect
                     delay(if (s.kind.isNudge) 2_000 else 8_000)
+                    // Read the latest state: the message and quote are filled in after the ring starts.
+                    val now = controller.state.value?.takeIf { it.request == s.request } ?: return@LaunchedEffect
+                    val lines = if (now.kind.isNudge) listOf(now.label)
+                    else listOfNotNull(now.message, now.quote?.let { q -> listOf(q.text, q.source).filter(String::isNotBlank).joinToString(". ") })
+                    if (lines.all(String::isBlank)) return@LaunchedEffect
                     val voice = speaker ?: Speaker(this@RingingActivity) { controller.duck(it) }.also { speaker = it }
                     lines.forEach(voice::speak)
                 }

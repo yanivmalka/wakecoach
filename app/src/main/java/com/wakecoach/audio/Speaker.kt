@@ -16,6 +16,8 @@ class Speaker(context: Context, private val onSpeaking: (Boolean) -> Unit = {}) 
     private var ready = false
     private val pending = mutableListOf<String>()
     private val main = Handler(Looper.getMainLooper())
+    /** Utterances started and not yet finished; the duck lasts while this is above zero. */
+    private var active = 0
     private lateinit var tts: TextToSpeech
 
     init {
@@ -31,12 +33,13 @@ class Speaker(context: Context, private val onSpeaking: (Boolean) -> Unit = {}) 
             )
             tts.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                 override fun onStart(id: String?) {
-                    main.post { onSpeaking(true) }
+                    main.post { if (active++ == 0) onSpeaking(true) }
                 }
                 override fun onDone(id: String?) = finished()
                 @Deprecated("Deprecated in Java")
                 override fun onError(id: String?) = finished()
                 override fun onError(id: String?, errorCode: Int) = finished()
+                override fun onStop(id: String?, interrupted: Boolean) = finished()
             })
             pending.forEach(::speak)
             pending.clear()
@@ -44,8 +47,8 @@ class Speaker(context: Context, private val onSpeaking: (Boolean) -> Unit = {}) 
     }
 
     private fun finished() {
-        // Only the last queued line ends the duck.
-        main.post { if (!tts.isSpeaking) onSpeaking(false) }
+        // Only the last finished line ends the duck; counting avoids racing isSpeaking().
+        main.post { if (active > 0 && --active == 0) onSpeaking(false) }
     }
 
     /** Queues [text] after anything already being read. */
@@ -56,7 +59,7 @@ class Speaker(context: Context, private val onSpeaking: (Boolean) -> Unit = {}) 
     }
 
     fun shutdown() {
-        tts.shutdown()
-        onSpeaking(false)
+        if (::tts.isInitialized) tts.shutdown()
+        if (active > 0) { active = 0; onSpeaking(false) }
     }
 }

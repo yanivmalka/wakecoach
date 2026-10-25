@@ -9,6 +9,7 @@ import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.os.VibrationEffect
+import android.provider.Settings
 import android.os.Vibrator
 import com.wakecoach.R
 import com.wakecoach.core.audio.BuiltinSound
@@ -27,7 +28,8 @@ class AlarmPlayer(private val context: Context) {
     private val pending = mutableListOf<Runnable>()
     /** Volume the ramp/stage wants; ducking scales it down temporarily. */
     private var targetVolume = MIN_VOLUME
-    private var ducked = false
+    /** Voices currently speaking over the alarm (TTS, a recording); ducked while > 0. */
+    private var duckers = 0
     private var overlayPlayer: MediaPlayer? = null
 
     fun start(profile: Profile, plan: SoundPlan) = handler.post {
@@ -57,40 +59,48 @@ class AlarmPlayer(private val context: Context) {
 
     private fun playOverlay(file: java.io.File) {
         if (player == null) return
-        val voice = runCatching {
-            MediaPlayer().apply {
-                setAudioAttributes(
-                    AudioAttributes.Builder()
-                        .setUsage(AudioAttributes.USAGE_ALARM)
-                        .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                        .build()
-                )
-                setDataSource(file.absolutePath)
-                prepare()
-            }
-        }.getOrNull() ?: return
-        overlayPlayer = voice
-        ducked = true
-        applyVolume()
-        voice.setOnCompletionListener {
-            it.release()
-            if (overlayPlayer === it) overlayPlayer = null
-            ducked = false
-            applyVolume()
+        val voice = MediaPlayer()
+        try {
+            voice.setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_ALARM)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .build()
+            )
+            voice.setDataSource(file.absolutePath)
+            voice.prepare()
+        } catch (e: Exception) {
+            voice.release()
+            return
         }
+        overlayPlayer = voice
+        duckers++
+        applyVolume()
+        val done = { mp: MediaPlayer ->
+            if (overlayPlayer === mp) {
+                overlayPlayer = null
+                mp.release()
+                duckers = (duckers - 1).coerceAtLeast(0)
+                applyVolume()
+            }
+        }
+        voice.setOnCompletionListener { done(it) }
+        voice.setOnErrorListener { mp, _, _ -> done(mp); true }
         voice.start()
     }
 
     /** Lowers the alarm while a voice line or recording plays over it. */
     fun duck(on: Boolean) = handler.post {
-        ducked = on
+        duckers = (duckers + if (on) 1 else -1).coerceAtLeast(0)
         applyVolume()
     }
 
+    /** Switches to [sound]; keeps the current sound if the new one cannot be opened. */
     private fun play(sound: SoundRef, volume: Float) {
+        val next = candidates(sound).firstNotNullOfOrNull(::create) ?: return
         player?.run { runCatching { stop() }; release() }
+        player = next
         targetVolume = volume
-        player = candidates(sound).firstNotNullOfOrNull { uri -> runCatching { create(uri) }.getOrNull() }
         applyVolume()
     }
 
@@ -104,23 +114,48 @@ class AlarmPlayer(private val context: Context) {
                 else -> rawUri(context, sound.sound)
             }
         }
-        return listOfNotNull(own) + system
+        // Settings.System defaults resolve through the system's readable cache even when the
+        // underlying file is not readable by us; the bundled beep is always readable.
+        val last = listOfNotNull(
+            Settings.System.DEFAULT_ALARM_ALERT_URI,
+            Settings.System.DEFAULT_RINGTONE_URI,
+            rawUri(context, BuiltinSound.URGENT_BEEP),
+        )
+        return (listOfNotNull(own) + system + last).distinct()
     }
 
-    private fun create(uri: Uri): MediaPlayer =
-        MediaPlayer().apply {
-            setAudioAttributes(
+    /** An opened, playing player for [uri], or null; never leaks a half-set-up player. */
+    private fun create(uri: Uri): MediaPlayer? {
+        val mp = MediaPlayer()
+        return try {
+            mp.setAudioAttributes(
                 AudioAttributes.Builder()
                     .setUsage(AudioAttributes.USAGE_ALARM)
                     .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                     .build()
             )
-            setDataSource(context, uri)
-            isLooping = true
-            setVolume(0f, 0f)
-            prepare()
-            start()
+            mp.setDataSource(context, uri)
+            mp.isLooping = true
+            mp.setVolume(0f, 0f)
+            mp.prepare()
+            // If playback dies mid-ring (media server restart, file gone), fall back to the beep.
+            mp.setOnErrorListener { failed, _, _ ->
+                handler.post {
+                    if (player === failed) {
+                        player = null
+                        failed.release()
+                        play(SoundRef.Builtin(BuiltinSound.URGENT_BEEP), maxOf(targetVolume, 0.5f))
+                    }
+                }
+                true
+            }
+            mp.start()
+            mp
+        } catch (e: Exception) {
+            mp.release()
+            null
         }
+    }
 
     private fun rampTo(end: Float, seconds: Int) {
         val steps = seconds.coerceAtLeast(1) * 2
@@ -135,7 +170,7 @@ class AlarmPlayer(private val context: Context) {
     }
 
     private fun applyVolume() {
-        val v = if (ducked) targetVolume * DUCK else targetVolume
+        val v = if (duckers > 0) targetVolume * DUCK else targetVolume
         player?.setVolume(v, v)
     }
 
@@ -158,7 +193,7 @@ class AlarmPlayer(private val context: Context) {
         player = null
         overlayPlayer?.run { runCatching { stop() }; release() }
         overlayPlayer = null
-        ducked = false
+        duckers = 0
         targetVolume = MIN_VOLUME
         vibrator().cancel()
     }
