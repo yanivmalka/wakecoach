@@ -25,6 +25,8 @@ data class AlarmEntity(
     val kind: String = AlarmKind.WAKE.name,
     /** Chosen sound ([com.wakecoach.core.audio.SoundRef.encode]); null = pick automatically. */
     val soundUri: String? = null,
+    /** "Skip once": epoch day whose occurrence is passed over; null when not skipping. */
+    val skipDate: Long? = null,
 ) {
     companion object {
         fun maskOf(days: Set<DayOfWeek>) = days.fold(0) { m, d -> m or (1 shl (d.value - 1)) }
@@ -36,6 +38,7 @@ val AlarmEntity.time: LocalTime get() = LocalTime.of(hour, minute)
 val AlarmEntity.repeatDays: Set<DayOfWeek>
     get() = DayOfWeek.entries.filter { daysMask and (1 shl (it.value - 1)) != 0 }.toSet()
 val AlarmEntity.profile: Profile get() = Profiles.byId(profileId)
+val AlarmEntity.skipLocalDate: java.time.LocalDate? get() = skipDate?.let(java.time.LocalDate::ofEpochDay)
 val AlarmEntity.alarmKind: AlarmKind get() = AlarmKind.entries.firstOrNull { it.name == kind } ?: AlarmKind.WAKE
 
 @Entity(tableName = "wake_sessions")
@@ -94,3 +97,24 @@ data class RecordingEntity(
 )
 
 enum class RecordingPurpose { WHY, ENCOURAGE, WAKE_MESSAGE }
+
+/** Every alarm that rang (not tests): what the alarm guard learns regular habits from. */
+@Entity(tableName = "ring_log")
+data class RingLogEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val alarmId: Long,
+    val kind: String,
+    val label: String,
+    /** Epoch millis of the first ring. */
+    val at: Long,
+)
+
+/** The user's answers to the alarm guard ("not this time", "stop tracking"). */
+@Entity(tableName = "guard_decisions")
+data class GuardDecisionEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val slotKey: String,
+    /** Epoch day the answer applies to; null for "stop tracking" (all days). */
+    val date: Long?,
+    val decision: String,
+)

@@ -33,6 +33,7 @@ import com.wakecoach.core.model.SnoozePolicy
 import com.wakecoach.core.share.WakeStatusTracker
 import com.wakecoach.R
 import com.wakecoach.data.CalendarRepository
+import com.wakecoach.data.GuardRepository
 import com.wakecoach.data.QuoteRepository
 import com.wakecoach.data.RecordingRepository
 import com.wakecoach.data.SettingsRepository
@@ -75,6 +76,7 @@ class RingController(
     private val recordings: RecordingRepository,
     private val calendar: CalendarRepository,
     private val settings: SettingsRepository,
+    private val guard: GuardRepository,
 ) {
     private val _state = MutableStateFlow<RingState?>(null)
     val state: StateFlow<RingState?> = _state
@@ -115,6 +117,8 @@ class RingController(
         val now = System.currentTimeMillis()
         val request = if (incoming.firstRingAt == 0L) incoming.copy(firstRingAt = now) else incoming
         val kind = alarm.alarmKind
+        // Only the first ring of a morning counts as a habit, not every snooze.
+        if (request.snoozeCount == 0) guarded("ring log") { guard.logRing(alarm, now) }
         guarded("re-arm") {
             if (kind == AlarmKind.TEST) {
                 // A test ring is single-use; drop its row now so it never shows up or re-arms.

@@ -179,4 +179,23 @@
     <string name="progress_worse">A bit more snoozing than last week. Tomorrow is a new chance.</string>
     <string name="progress_chart_snoozes">Snoozes per morning, by week</string>
     <string name="progress_chart_minutes">Minutes from first ring to up, by week</string>
+    <string name="skipping_on">Skipping %1$s</string>
+    <string name="disable_title">Turn off this alarm?</string>
+    <string name="disable_text">This alarm rings regularly. Skip only the next time, or turn it off completely?</string>
+    <string name="disable_skip_next">Skip next time only</string>
+    <string name="disable_turn_off">Turn off</string>
+    <string name="guard_title">Missing alarm?</string>
+    <string name="guard_today">Today</string>
+    <string name="guard_tomorrow">Tomorrow</string>
+    <string name="guard_text">%1$s you have no: %2$s. On purpose?</string>
+    <string name="guard_intro">%1$s these usual alarms are missing:</string>
+    <string name="guard_all_covered">%1$s is covered ✅ All your usual alarms are set.</string>
+    <string name="guard_add">Add</string>
+    <string name="guard_add_all">Add all</string>
+    <string name="guard_not_this_time">Not this time</string>
+    <string name="guard_stop_tracking">Stop asking about this one</string>
+    <string name="guard_setting">Alarm guard</string>
+    <string name="guard_setting_explain">Learns your regular alarms and reminders, and asks when one is missing.</string>
+    <string name="rest_days">Rest days (no questions)</string>
+    <string name="guard_check_now">Check now</string>
 </resources>

@@ -18,6 +18,7 @@ import com.wakecoach.ui.ringing.RingingActivity
 import kotlinx.coroutines.launch
 import com.wakecoach.core.schedule.MorningDate
 import java.time.LocalDateTime
+import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -125,5 +126,87 @@ private fun BroadcastReceiver.goAsyncWith(context: Context, block: suspend () ->
     val pending = goAsync()
     context.container.appScope.launch {
         try { block() } finally { pending.finish() }
+    }
+}
+
+/**
+ * Alarm guard check (fires at 21:00 for tomorrow and 08:00 for the rest of today): if a regular
+ * wake-up or daytime reminder has no alarm, ask once, listing everything missing together.
+ */
+class GuardReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        goAsyncWith(context) {
+            val c = context.container
+            val now = LocalDateTime.now()
+            val (date, notBefore) = GuardNotifier.window(now)
+            val missing = c.guard.missing(date, notBefore)
+            if (missing.isNotEmpty()) GuardNotifier.show(context, date, missing)
+            c.scheduler.rescheduleAll()
+        }
+    }
+}
+
+/** "Add all" / "Not this time" straight from the guard notification. */
+class GuardActionReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        val date = LocalDate.ofEpochDay(intent.getLongExtra(GuardNotifier.EXTRA_DATE, LocalDate.now().toEpochDay()))
+        goAsyncWith(context) {
+            val c = context.container
+            // Recompute rather than trust stale extras: the user may have added alarms meanwhile.
+            val notBefore = if (date == LocalDate.now()) LocalDateTime.now() else null
+            val missing = c.guard.missing(date, notBefore)
+            when (intent.action) {
+                GuardNotifier.ACTION_ADD_ALL -> c.guard.addAlarms(missing, date)
+                GuardNotifier.ACTION_SKIP_ALL -> c.guard.notThisTime(missing, date)
+            }
+            context.getSystemService(NotificationManager::class.java).cancel(GuardNotifier.NOTIF_ID)
+            c.scheduler.rescheduleAll()
+        }
+    }
+}
+
+object GuardNotifier {
+    const val NOTIF_ID = 23
+    const val EXTRA_DATE = "guard_date"
+    const val ACTION_ADD_ALL = "com.wakecoach.GUARD_ADD_ALL"
+    const val ACTION_SKIP_ALL = "com.wakecoach.GUARD_SKIP_ALL"
+
+    /** In the evening look at tomorrow; in the morning at today's slots still 2+ hours away. */
+    fun window(now: LocalDateTime): Pair<LocalDate, LocalDateTime?> =
+        if (now.hour >= 12) now.toLocalDate().plusDays(1) to null
+        else now.toLocalDate() to now.plusHours(2)
+
+    fun describe(context: Context, slots: List<com.wakecoach.core.guard.Slot>): String {
+        val hhmm = DateTimeFormatter.ofPattern("HH:mm")
+        return slots.joinToString(", ") { s ->
+            if (s.kind == com.wakecoach.core.model.AlarmKind.WAKE) "${context.getString(R.string.kind_wake)} ${s.time.format(hhmm)}"
+            else "“${s.label}” ${s.time.format(hhmm)}"
+        }
+    }
+
+    fun show(context: Context, date: LocalDate, slots: List<com.wakecoach.core.guard.Slot>) {
+        val day = context.getString(if (date == LocalDate.now()) R.string.guard_today else R.string.guard_tomorrow)
+        val text = context.getString(R.string.guard_text, day, describe(context, slots))
+        fun action(name: String, code: Int) = PendingIntent.getBroadcast(
+            context, code,
+            Intent(context, GuardActionReceiver::class.java).setAction(name).putExtra(EXTRA_DATE, date.toEpochDay()),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        val open = PendingIntent.getActivity(
+            context, 13,
+            Intent(context, MainActivity::class.java).putExtra(MainActivity.EXTRA_OPEN_GUARD, date.toEpochDay()),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        val n = NotificationCompat.Builder(context, WakeCoachApp.CHANNEL_COACH)
+            .setSmallIcon(R.drawable.ic_launcher)
+            .setContentTitle(context.getString(R.string.guard_title))
+            .setContentText(text)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(text))
+            .setContentIntent(open)
+            .addAction(0, context.getString(R.string.guard_add_all), action(ACTION_ADD_ALL, 14))
+            .addAction(0, context.getString(R.string.guard_not_this_time), action(ACTION_SKIP_ALL, 15))
+            .setAutoCancel(true)
+            .build()
+        context.getSystemService(NotificationManager::class.java).notify(NOTIF_ID, n)
     }
 }

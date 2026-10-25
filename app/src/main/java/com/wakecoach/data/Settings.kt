@@ -30,6 +30,10 @@ data class UserSettings(
     val recentQuoteIds: List<Int> = emptyList(),
     /** Play a personal recording over a wake-up that is not answered. */
     val playRecordings: Boolean = true,
+    /** Ask when a regular alarm is missing or switched off. */
+    val guardEnabled: Boolean = true,
+    /** [java.time.DayOfWeek.getValue] of days the guard stays quiet; Saturday by default. */
+    val restDays: Set<Int> = setOf(6),
 )
 
 class SettingsRepository(private val context: Context) {
@@ -45,6 +49,8 @@ class SettingsRepository(private val context: Context) {
         val QUOTE_CATEGORIES = stringSetPreferencesKey("quote_categories")
         val RECENT_QUOTES = stringPreferencesKey("recent_quotes")
         val PLAY_RECORDINGS = booleanPreferencesKey("play_recordings")
+        val GUARD = booleanPreferencesKey("guard_enabled")
+        val REST_DAYS = stringSetPreferencesKey("rest_days")
     }
 
     val settings: Flow<UserSettings> = context.dataStore.data.map {
@@ -61,6 +67,8 @@ class SettingsRepository(private val context: Context) {
             quoteCategories = it[Keys.QUOTE_CATEGORIES] ?: UserSettings().quoteCategories,
             recentQuoteIds = it[Keys.RECENT_QUOTES].orEmpty().split(',').mapNotNull(String::toIntOrNull),
             playRecordings = it[Keys.PLAY_RECORDINGS] ?: true,
+            guardEnabled = it[Keys.GUARD] ?: true,
+            restDays = it[Keys.REST_DAYS]?.mapNotNull(String::toIntOrNull)?.toSet() ?: UserSettings().restDays,
         )
     }
 
@@ -80,6 +88,8 @@ class SettingsRepository(private val context: Context) {
             it[Keys.QUOTE_CATEGORIES] = next.quoteCategories
             it[Keys.RECENT_QUOTES] = next.recentQuoteIds.joinToString(",")
             it[Keys.PLAY_RECORDINGS] = next.playRecordings
+            it[Keys.GUARD] = next.guardEnabled
+            it[Keys.REST_DAYS] = next.restDays.map(Int::toString).toSet()
         }
     }
 }

@@ -14,6 +14,8 @@ import com.wakecoach.data.AlarmEntity
 import com.wakecoach.data.SettingsRepository
 import com.wakecoach.data.WakeRepository
 import com.wakecoach.data.alarmKind
+import com.wakecoach.data.skipLocalDate
+import java.time.LocalTime
 import com.wakecoach.ui.MainActivity
 import java.time.Duration
 import java.time.ZonedDateTime
@@ -32,10 +34,29 @@ class AlarmScheduler(
         val alarms = repository.alarms.enabled().filter { it.alarmKind != AlarmKind.TEST }
         alarms.forEach { schedule(it, now) }
         scheduleBedtime(alarms, now)
+        scheduleGuard(now)
+    }
+
+    /**
+     * The alarm guard looks ahead twice a day: 21:00 checks tomorrow, 08:00 checks the rest of
+     * today's reminders. Inexact is fine; it only asks a question.
+     */
+    private suspend fun scheduleGuard(now: ZonedDateTime) {
+        val pi = PendingIntent.getBroadcast(
+            context, GUARD_CODE, Intent(context, GuardReceiver::class.java),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        am.cancel(pi)
+        if (!settings.current().guardEnabled) return
+        val next = listOf(LocalTime.of(8, 0), LocalTime.of(21, 0))
+            .flatMap { t -> listOf(now.with(t), now.plusDays(1).with(t)) }
+            .filter { it.isAfter(now) }
+            .min()
+        am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, next.toInstant().toEpochMilli(), pi)
     }
 
     fun schedule(alarm: AlarmEntity, now: ZonedDateTime = ZonedDateTime.now()) {
-        val at = AlarmTimeCalculator.nextTrigger(alarm.time, alarm.repeatDays, now)
+        val at = AlarmTimeCalculator.nextTrigger(alarm.time, alarm.repeatDays, now, alarm.skipLocalDate)
         val extras = RingRequest(alarm.id, at.toInstant().toEpochMilli(), firstRingAt = 0, snoozeCount = 0)
         setAlarmClock(at.toInstant().toEpochMilli(), ringIntent(alarm.id.toInt(), extras))
     }
@@ -87,7 +108,7 @@ class AlarmScheduler(
         // Daytime reminders do not define bedtime.
         val plan = alarms
             .filter { it.alarmKind == AlarmKind.WAKE }
-            .map { AlarmTimeCalculator.nextTrigger(it.time, it.repeatDays, now) }
+            .map { AlarmTimeCalculator.nextTrigger(it.time, it.repeatDays, now, it.skipLocalDate) }
             .map { BedtimeCalculator.plan(it, Duration.ofMinutes(s.sleepGoalMinutes.toLong())) }
             .filter { it.reminderAt.isAfter(now) }
             .minByOrNull { it.reminderAt } ?: return
@@ -128,6 +149,7 @@ class AlarmScheduler(
         private const val SNOOZE_OFFSET = 1_000_000
         private const val BEDTIME_CODE = 2_000_001
         private const val FOLLOW_UP_CODE = 2_000_002
+        private const val GUARD_CODE = 2_000_003
     }
 }
 

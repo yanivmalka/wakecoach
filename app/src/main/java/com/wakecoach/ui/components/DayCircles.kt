@@ -29,7 +29,12 @@ import java.util.Locale
 
 /** Seven round day toggles in locale order, with "weekdays" / "every day" shortcuts. */
 @Composable
-fun DayCircles(selected: Set<DayOfWeek>, onChange: (Set<DayOfWeek>) -> Unit, modifier: Modifier = Modifier) {
+fun DayCircles(
+    selected: Set<DayOfWeek>,
+    onChange: (Set<DayOfWeek>) -> Unit,
+    modifier: Modifier = Modifier,
+    showShortcuts: Boolean = true,
+) {
     val locale = Locale.getDefault()
     val first = WeekFields.of(locale).firstDayOfWeek
     val days = (0L..6L).map { first.plus(it) }
@@ -59,7 +64,7 @@ fun DayCircles(selected: Set<DayOfWeek>, onChange: (Set<DayOfWeek>) -> Unit, mod
                 }
             }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (showShortcuts) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             AssistChip(onClick = { onChange(workWeek) }, label = { Text(stringResource(R.string.days_workweek)) })
             AssistChip(onClick = { onChange(DayOfWeek.entries.toSet()) }, label = { Text(stringResource(R.string.days_every)) })
             AssistChip(onClick = { onChange(emptySet()) }, label = { Text(stringResource(R.string.repeat_once)) })

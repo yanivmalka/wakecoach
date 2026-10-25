@@ -180,6 +180,8 @@ fun EditAlarmScreen(
                             hour = hour, minute = minute, daysMask = AlarmEntity.maskOf(days),
                             profileId = profileId, importance = importance, label = label.trim(),
                             kind = kind.name, enabled = true, soundUri = soundUri,
+                            // Saving an edit starts fresh: any "skip once" is dropped.
+                            skipDate = null,
                         )
                     )
                 },

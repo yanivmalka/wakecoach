@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.wakecoach.R
 import com.wakecoach.data.UserSettings
+import com.wakecoach.ui.components.DayCircles
 import com.wakecoach.ui.theme.BigTouch
 import com.wakecoach.ui.theme.ThemeMode
 import kotlin.math.roundToInt
@@ -50,6 +51,7 @@ fun SettingsScreen(
     onOpenRecordings: () -> Unit,
     calendarConnected: Boolean,
     onConnectCalendar: () -> Unit,
+    onCheckGuard: () -> Unit,
 ) {
     Column(
         Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).safeDrawingPadding().padding(20.dp)
@@ -131,6 +133,25 @@ fun SettingsScreen(
             }
             if (calendarConnected) Text("✅", fontSize = 20.sp)
             else OutlinedButton(onClick = onConnectCalendar) { Text(stringResource(R.string.calendar_connect)) }
+        }
+
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("🛡 " + stringResource(R.string.guard_setting), fontSize = 18.sp)
+                Text(stringResource(R.string.guard_setting_explain), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Switch(checked = settings.guardEnabled, onCheckedChange = { b -> onChange { it.copy(guardEnabled = b) } })
+        }
+        if (settings.guardEnabled) {
+            Text(stringResource(R.string.rest_days), fontSize = 16.sp)
+            DayCircles(
+                selected = settings.restDays.mapNotNull { v -> java.time.DayOfWeek.entries.firstOrNull { it.value == v } }.toSet(),
+                onChange = { days -> onChange { it.copy(restDays = days.map { d -> d.value }.toSet()) } },
+                showShortcuts = false,
+            )
+            OutlinedButton(onClick = onCheckGuard, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
+                Text(stringResource(R.string.guard_check_now))
+            }
         }
 
         OutlinedButton(onClick = onOpenHealth, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {

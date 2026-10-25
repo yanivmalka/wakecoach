@@ -27,6 +27,14 @@ import com.wakecoach.core.model.AlarmKind
 import com.wakecoach.data.AlarmEntity
 import com.wakecoach.ui.health.HealthScreen
 import com.wakecoach.ui.progress.ProgressScreen
+import com.wakecoach.ui.guard.GuardScreen
+import com.wakecoach.alarm.GuardNotifier
+import androidx.compose.foundation.layout.Row
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import java.time.LocalDate
+import java.time.LocalDateTime
 import com.wakecoach.ui.recordings.InterviewScreen
 import com.wakecoach.ui.recordings.RecordingsScreen
 import kotlinx.coroutines.delay
@@ -53,6 +61,7 @@ sealed interface Screen {
     data object Recordings : Screen
     data object Interview : Screen
     data object Progress : Screen
+    data class Guard(val date: LocalDate) : Screen
 }
 
 class MainActivity : ComponentActivity() {
@@ -81,6 +90,26 @@ class MainActivity : ComponentActivity() {
                     if (ringing != null) startActivity(Intent(this@MainActivity, RingingActivity::class.java))
                 }
                 BackHandler(enabled = screen != Screen.Home) { screen = Screen.Home }
+
+                val disabling by vm.pendingDisable.collectAsStateWithLifecycle()
+                disabling?.let { alarm ->
+                    AlertDialog(
+                        onDismissRequest = { vm.pendingDisable.value = null },
+                        title = { Text(getString(R.string.disable_title)) },
+                        text = { Text(getString(R.string.disable_text)) },
+                        confirmButton = {
+                            TextButton(onClick = { vm.skipNext(alarm) }) { Text(getString(R.string.disable_skip_next)) }
+                        },
+                        dismissButton = {
+                            Row {
+                                TextButton(onClick = { vm.pendingDisable.value = null }) { Text(getString(R.string.cancel)) }
+                                TextButton(onClick = { vm.pendingDisable.value = null; vm.setEnabled(alarm, false) }) {
+                                    Text(getString(R.string.disable_turn_off))
+                                }
+                            }
+                        },
+                    )
+                }
 
                 // Re-read phone settings on every resume (the user may be back from fixing one).
                 val checks = remember(resumes, alarms, settings.samsungNeverSleepConfirmed) {
@@ -129,7 +158,7 @@ class MainActivity : ComponentActivity() {
                         onOpenHealth = { screen = Screen.Health },
                         onAdd = { screen = Screen.Edit(null) },
                         onEdit = { screen = Screen.Edit(it.id) },
-                        onToggle = vm::setEnabled,
+                        onToggle = vm::requestToggle,
                         onEvening = { screen = Screen.Evening },
                         onSettings = { screen = Screen.Settings },
                         onProgress = { screen = Screen.Progress },
@@ -161,6 +190,7 @@ class MainActivity : ComponentActivity() {
                         onOpenRecordings = { screen = Screen.Recordings },
                         calendarConnected = resumes.let { container.calendar.hasPermission() },
                         onConnectCalendar = { askPermission.launch(Manifest.permission.READ_CALENDAR) },
+                        onCheckGuard = { screen = Screen.Guard(GuardNotifier.window(LocalDateTime.now()).first) },
                         onCheckUpdates = {
                             showUpdate = true
                             scope.launch { updater.check() }
@@ -178,6 +208,12 @@ class MainActivity : ComponentActivity() {
                         onDone = { screen = Screen.Recordings },
                     )
                     Screen.Progress -> ProgressScreen(container.repository, onBack = { screen = Screen.Home })
+                    is Screen.Guard -> GuardScreen(
+                        date = s.date,
+                        repo = container.guard,
+                        onChanged = { container.scheduler.rescheduleAll() },
+                        onBack = { screen = Screen.Home },
+                    )
                     Screen.Health -> HealthScreen(
                         checks = checks,
                         testScheduled = testScheduled,
@@ -223,9 +259,13 @@ class MainActivity : ComponentActivity() {
 
     private fun handle(intent: Intent?) {
         if (intent?.getBooleanExtra(EXTRA_OPEN_EVENING, false) == true) screen = Screen.Evening
+        intent?.getLongExtra(EXTRA_OPEN_GUARD, Long.MIN_VALUE)?.takeIf { it != Long.MIN_VALUE }?.let {
+            screen = Screen.Guard(LocalDate.ofEpochDay(it))
+        }
     }
 
     companion object {
         const val EXTRA_OPEN_EVENING = "open_evening"
+        const val EXTRA_OPEN_GUARD = "open_guard"
     }
 }

@@ -51,6 +51,16 @@ class AlarmTimeCalculatorTest {
         assertEquals(at("2026-10-27", "06:30"), next)
     }
 
+    @Test fun skipOncePassesOverThatDay() {
+        // Repeats Sun and Tue; skipping Sun 25th lands on Tue 27th.
+        val days = setOf(DayOfWeek.SUNDAY, DayOfWeek.TUESDAY)
+        val next = AlarmTimeCalculator.nextTrigger(LocalTime.of(6, 30), days, at("2026-10-24", "22:00"), LocalDate.parse("2026-10-25"))
+        assertEquals(at("2026-10-27", "06:30"), next)
+        // Weekly alarm skipping its only day moves a full week.
+        val weekly = AlarmTimeCalculator.nextTrigger(LocalTime.of(6, 30), setOf(DayOfWeek.SUNDAY), at("2026-10-24", "22:00"), LocalDate.parse("2026-10-25"))
+        assertEquals(at("2026-11-01", "06:30"), weekly)
+    }
+
     @Test fun dstGapShiftsForward() {
         // Israel springs forward on 2026-03-27 at 02:00 -> 03:00.
         val next = AlarmTimeCalculator.nextTrigger(LocalTime.of(2, 30), emptySet(), at("2026-03-27", "01:00"))

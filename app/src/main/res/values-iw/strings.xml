@@ -180,4 +180,23 @@
     <string name="progress_worse">קצת יותר נודניקים מהשבוע שעבר. מחר הזדמנות חדשה.</string>
     <string name="progress_chart_snoozes">נודניקים לבוקר, לפי שבוע</string>
     <string name="progress_chart_minutes">דקות מהצלצול הראשון עד הקימה, לפי שבוע</string>
+    <string name="skipping_on">מדלג על %1$s</string>
+    <string name="disable_title">לכבות את ההתראה?</string>
+    <string name="disable_text">ההתראה הזו מצלצלת באופן קבוע. לדלג רק על הפעם הבאה, או לכבות לגמרי?</string>
+    <string name="disable_skip_next">לדלג רק על הפעם הבאה</string>
+    <string name="disable_turn_off">לכבות</string>
+    <string name="guard_title">חסרה התראה?</string>
+    <string name="guard_today">היום</string>
+    <string name="guard_tomorrow">מחר</string>
+    <string name="guard_text">%1$s אין לך: %2$s. זה בכוונה?</string>
+    <string name="guard_intro">%1$s חסרות ההתראות הקבועות האלה:</string>
+    <string name="guard_all_covered">%1$s מכוסה ✅ כל ההתראות הקבועות מוגדרות.</string>
+    <string name="guard_add">הוסף</string>
+    <string name="guard_add_all">הוסף הכל</string>
+    <string name="guard_not_this_time">לא הפעם</string>
+    <string name="guard_stop_tracking">להפסיק לשאול על זה</string>
+    <string name="guard_setting">שומר התראות</string>
+    <string name="guard_setting_explain">לומד את ההתראות והתזכורות הקבועות שלך, ושואל כשאחת חסרה.</string>
+    <string name="rest_days">ימי מנוחה (בלי שאלות)</string>
+    <string name="guard_check_now">בדוק עכשיו</string>
 </resources>

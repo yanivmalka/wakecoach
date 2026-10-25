@@ -69,3 +69,24 @@ interface RecordingDao {
     @Delete
     suspend fun delete(r: RecordingEntity)
 }
+
+@Dao
+interface GuardDao {
+    @Insert
+    suspend fun logRing(r: RingLogEntity)
+
+    @Query("SELECT * FROM ring_log WHERE at >= :since")
+    suspend fun ringsSince(since: Long): List<RingLogEntity>
+
+    @Query("SELECT COUNT(*) FROM ring_log WHERE alarmId = :alarmId AND at >= :since")
+    suspend fun ringCount(alarmId: Long, since: Long): Int
+
+    @Insert
+    suspend fun decide(d: GuardDecisionEntity)
+
+    @Query("SELECT * FROM guard_decisions")
+    suspend fun decisions(): List<GuardDecisionEntity>
+
+    @Query("DELETE FROM ring_log WHERE at < :before")
+    suspend fun pruneRings(before: Long)
+}

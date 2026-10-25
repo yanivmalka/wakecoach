@@ -44,6 +44,8 @@ import com.wakecoach.core.schedule.AlarmTimeCalculator
 import com.wakecoach.core.model.AlarmKind
 import com.wakecoach.data.AlarmEntity
 import com.wakecoach.data.alarmKind
+import com.wakecoach.data.skipLocalDate
+import java.time.LocalDate
 import com.wakecoach.ui.profileName
 import com.wakecoach.ui.theme.BigDigits
 import com.wakecoach.ui.theme.BigTouch
@@ -152,6 +154,12 @@ private fun AlarmRow(alarm: AlarmEntity, onClick: () -> Unit, onToggle: (Boolean
             val days = if (alarm.repeatDays.isEmpty()) stringResource(R.string.repeat_once)
             else alarm.repeatDays.sorted().joinToString(" ") { it.getDisplayName(TextStyle.SHORT, Locale.getDefault()) }
             val profile = if (alarm.alarmKind == AlarmKind.REMINDER) "" else stringResource(profileName(alarm.profileId))
+            alarm.skipLocalDate?.takeIf { !it.isBefore(LocalDate.now()) }?.let { skip ->
+                Text(
+                    "⏭ " + stringResource(R.string.skipping_on, skip.format(DateTimeFormatter.ofPattern("EEEE d/M"))),
+                    fontSize = 15.sp, color = MaterialTheme.colorScheme.primary,
+                )
+            }
             Text(
                 listOf(alarm.label, days, profile).filter { it.isNotBlank() }.joinToString(" · "),
                 fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,

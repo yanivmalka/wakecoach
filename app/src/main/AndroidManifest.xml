@@ -58,6 +58,8 @@
         <receiver android:name=".alarm.AlarmReceiver" android:exported="false" />
         <receiver android:name=".alarm.BedtimeReceiver" android:exported="false" />
         <receiver android:name=".alarm.FollowUpReceiver" android:exported="false" />
+        <receiver android:name=".alarm.GuardReceiver" android:exported="false" />
+        <receiver android:name=".alarm.GuardActionReceiver" android:exported="false" />
         <receiver android:name=".update.InstallResultReceiver" android:exported="false" />
         <receiver android:name=".alarm.BootReceiver" android:exported="true">
             <intent-filter>
