@@ -51,6 +51,7 @@ fun SettingsScreen(
     onCheckUpdates: () -> Unit,
     onOpenHealth: () -> Unit,
     onOpenRecordings: () -> Unit,
+    onOpenDemo: () -> Unit,
     calendarConnected: Boolean,
     onConnectCalendar: () -> Unit,
     onCheckGuard: () -> Unit,
@@ -193,6 +194,10 @@ fun SettingsScreen(
 
         OutlinedButton(onClick = onOpenHealth, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
             Text("🔔 " + stringResource(R.string.health_menu), fontSize = 18.sp)
+        }
+
+        OutlinedButton(onClick = onOpenDemo, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
+            Text("🧪 " + stringResource(R.string.demo_title), fontSize = 18.sp)
         }
 
         Text(stringResource(R.string.updates), fontSize = 18.sp)

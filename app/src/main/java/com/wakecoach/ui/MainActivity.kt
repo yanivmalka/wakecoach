@@ -44,6 +44,7 @@ import com.wakecoach.ui.edit.EditAlarmScreen
 import com.wakecoach.ui.evening.EveningScreen
 import com.wakecoach.ui.home.HomeScreen
 import com.wakecoach.ui.home.SettingsScreen
+import com.wakecoach.ui.demo.DemoDataScreen
 import com.wakecoach.core.update.UpdateCheck
 import com.wakecoach.ui.ringing.RingingActivity
 import com.wakecoach.ui.update.UpdateBanner
@@ -61,6 +62,7 @@ sealed interface Screen {
     data object Recordings : Screen
     data object Interview : Screen
     data object Progress : Screen
+    data object Demo : Screen
     data class Guard(val date: LocalDate) : Screen
 }
 
@@ -192,6 +194,7 @@ class MainActivity : ComponentActivity() {
                         version = updater.installedVersion,
                         onOpenHealth = { screen = Screen.Health },
                         onOpenRecordings = { screen = Screen.Recordings },
+                        onOpenDemo = { screen = Screen.Demo },
                         calendarConnected = resumes.let { container.calendar.hasPermission() },
                         onConnectCalendar = { askPermission.launch(Manifest.permission.READ_CALENDAR) },
                         onWakeCheckChange = { on -> vm.updateSettings { it.copy(wakeCheck = on) } },
@@ -212,6 +215,7 @@ class MainActivity : ComponentActivity() {
                         repo = container.recordings,
                         onDone = { screen = Screen.Recordings },
                     )
+                    Screen.Demo -> DemoDataScreen(container.demo, onBack = { screen = Screen.Settings })
                     Screen.Progress -> ProgressScreen(container.repository, onBack = { screen = Screen.Home })
                     is Screen.Guard -> GuardScreen(
                         date = s.date,

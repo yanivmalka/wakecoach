@@ -11,6 +11,7 @@ import com.wakecoach.core.share.StatusPublisher
 import com.wakecoach.core.share.WakeStatusTracker
 import com.wakecoach.data.AppDatabase
 import com.wakecoach.data.CalendarRepository
+import com.wakecoach.data.DemoData
 import com.wakecoach.data.GuardRepository
 import com.wakecoach.data.RecordingRepository
 import com.wakecoach.data.QuoteRepository
@@ -71,6 +72,7 @@ class AppContainer(context: Context) {
     )
     val updater = Updater(context)
     val health = HealthChecker(context, scheduler)
+    val demo = DemoData(context, db, scheduler, settings)
 }
 
 val Context.container: AppContainer get() = (applicationContext as WakeCoachApp).container
