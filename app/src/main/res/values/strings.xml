@@ -235,7 +235,7 @@
     <string name="clock_ahead_explain">The alarm screen shows a time 3–9 minutes later. Revealed once you\'re up.</string>
 
     <!-- Demo data -->
-    <string name="demo_title">Demo data & reset</string>
+    <string name="demo_title">Demo data &amp; reset</string>
     <string name="demo_explain">Adds a ready-made user: alarms plus four weeks of wake-ups, snoozes and morning check-ins, so every screen has something to show. Added on top of what is already here.</string>
     <string name="demo_pick_persona">Who is it?</string>
     <string name="demo_add">Add demo data: %1$s</string>
