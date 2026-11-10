@@ -43,6 +43,7 @@ class AlarmReceiver : BroadcastReceiver() {
                 .setFullScreenIntent(ui, true)
                 .setContentIntent(ui)
                 .setAutoCancel(true)
+                .addAction(0, context.getString(R.string.emergency_stop), EmergencyStopReceiver.pendingIntent(context))
                 .build()
             context.getSystemService(NotificationManager::class.java).notify(NOTIF_FALLBACK, n)
         }
@@ -106,7 +107,7 @@ class FollowUpReceiver : BroadcastReceiver() {
 
 private const val NOTIF_BEDTIME = 20
 private const val NOTIF_FOLLOW_UP = 21
-private const val NOTIF_FALLBACK = 22
+internal const val NOTIF_FALLBACK = 22
 
 private fun notify(context: Context, id: Int, title: String, text: String, open: PendingIntent) {
     val n = NotificationCompat.Builder(context, WakeCoachApp.CHANNEL_COACH)
@@ -219,5 +220,23 @@ class WakeCheckReceiver : BroadcastReceiver() {
             if (!c.settings.current().wakeCheck) { c.wakeCheck.clear(); return@goAsyncWith }
             c.wakeCheck.check()?.let(c.scheduler::ringNow)
         }
+    }
+}
+
+/**
+ * "Emergency stop" from the ringing notification: silences a ring even when its screen is stuck.
+ * A development aid; see [com.wakecoach.alarm.RingController.emergencyStop].
+ */
+class EmergencyStopReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        // An open ring screen closes itself a few seconds after the ring state is gone.
+        context.container.ringController.emergencyStop()
+    }
+
+    companion object {
+        fun pendingIntent(context: Context): PendingIntent = PendingIntent.getBroadcast(
+            context, 16, Intent(context, EmergencyStopReceiver::class.java),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
     }
 }

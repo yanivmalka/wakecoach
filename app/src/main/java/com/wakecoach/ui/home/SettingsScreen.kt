@@ -56,6 +56,7 @@ fun SettingsScreen(
     onConnectCalendar: () -> Unit,
     onCheckGuard: () -> Unit,
     onWakeCheckChange: (Boolean) -> Unit,
+    onEmergencyStop: () -> Unit,
 ) {
     // Null until the user types, so the saved names show even if settings load after the screen.
     var names by remember { mutableStateOf<String?>(null) }
@@ -194,6 +195,21 @@ fun SettingsScreen(
 
         OutlinedButton(onClick = onOpenHealth, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
             Text("🔔 " + stringResource(R.string.health_menu), fontSize = 18.sp)
+        }
+
+        Text(stringResource(R.string.dev_title), fontSize = 20.sp)
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("🛑 " + stringResource(R.string.emergency_stop_setting), fontSize = 18.sp)
+                Text(stringResource(R.string.emergency_stop_explain), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Switch(checked = settings.emergencyStop, onCheckedChange = { b -> onChange { it.copy(emergencyStop = b) } })
+        }
+        OutlinedButton(
+            onClick = onEmergencyStop, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
+            colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+        ) {
+            Text("🛑 " + stringResource(R.string.emergency_stop_now), fontSize = 18.sp)
         }
 
         OutlinedButton(onClick = onOpenDemo, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {

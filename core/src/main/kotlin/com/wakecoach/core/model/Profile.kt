@@ -96,6 +96,9 @@ object Profiles {
 enum class AlarmKind {
     WAKE, REMINDER,
 
+    /** A one-time nudge about tomorrow's goal ("what matters tomorrow"), set from the evening screen. */
+    GOAL,
+
     /** One-off ring from the "test alarm" button; behaves like a reminder and is deleted after it rings. */
     TEST,
     ;

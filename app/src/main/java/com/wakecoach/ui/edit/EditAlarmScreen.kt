@@ -67,7 +67,9 @@ fun EditAlarmScreen(
     var importance by remember { mutableIntStateOf(base.importance) }
     var label by remember { mutableStateOf(base.label) }
     var soundUri by remember { mutableStateOf(base.soundUri) }
-    val isReminder = kind == AlarmKind.REMINDER
+    var once by remember { mutableStateOf(base.once) }
+    // Goal reminders (set from the evening screen) edit like any reminder and keep their kind.
+    val isReminder = kind.isNudge
     // A reminder without a label would ring with no idea what it is for.
     val canSave = !isReminder || label.isNotBlank()
 
@@ -83,7 +85,7 @@ fun EditAlarmScreen(
                     modifier = Modifier.heightIn(min = 48.dp),
                 )
                 FilterChip(
-                    selected = isReminder, onClick = { kind = AlarmKind.REMINDER },
+                    selected = isReminder, onClick = { if (!kind.isNudge) kind = AlarmKind.REMINDER },
                     label = { Text("🔔 " + stringResource(R.string.kind_reminder), fontSize = 18.sp) },
                     modifier = Modifier.heightIn(min = 48.dp),
                 )
@@ -119,6 +121,27 @@ fun EditAlarmScreen(
             }
 
             DayCircles(selected = days, onChange = { days = it }, modifier = Modifier.fillMaxWidth())
+            // With days chosen: every week on them, or just once on each (the next one of each day).
+            if (days.isNotEmpty()) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(
+                        selected = !once, onClick = { once = false },
+                        label = { Text("🔁 " + stringResource(R.string.repeat_weekly), fontSize = 16.sp) },
+                        modifier = Modifier.heightIn(min = 48.dp),
+                    )
+                    FilterChip(
+                        selected = once, onClick = { once = true },
+                        label = { Text("1️⃣ " + stringResource(R.string.repeat_once_on_days), fontSize = 16.sp) },
+                        modifier = Modifier.heightIn(min = 48.dp),
+                    )
+                }
+                if (once) {
+                    Text(
+                        stringResource(R.string.once_on_days_explain), fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
 
             SoundPickerRow(stored = soundUri, onChange = { soundUri = it })
 
@@ -180,6 +203,7 @@ fun EditAlarmScreen(
                             hour = hour, minute = minute, daysMask = AlarmEntity.maskOf(days),
                             profileId = profileId, importance = importance, label = label.trim(),
                             kind = kind.name, enabled = true, soundUri = soundUri,
+                            once = once && days.isNotEmpty(),
                             // Saving an edit starts fresh: any "skip once" is dropped.
                             skipDate = null,
                         )

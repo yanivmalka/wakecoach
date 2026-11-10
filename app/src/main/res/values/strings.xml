@@ -290,4 +290,18 @@
     <string name="demo_pri_truck">Delivery to Eilat</string>
     <string name="demo_pri_retiree">Morning walk with friends</string>
     <string name="demo_pri_grandparent">Grandchildren come to visit</string>
+    <string name="goal_reminders_title">Remind me during the day</string>
+    <string name="goal_reminders_explain">One-time reminders of this goal, only on that day.</string>
+    <string name="goal_reminders_need_text">Write a goal first, then pick reminder times.</string>
+    <string name="goal_reminder_other_time">Other time</string>
+    <string name="repeat_weekly">Every week</string>
+    <string name="repeat_once_on_days">Once only</string>
+    <string name="once_on_days_explain">Rings one time on the next of each chosen day, then turns off.</string>
+    <string name="once_on">Once: %1$s</string>
+    <string name="emergency_stop">Emergency stop</string>
+    <string name="emergency_stop_hold">Hold for emergency stop</string>
+    <string name="dev_title">Development</string>
+    <string name="emergency_stop_setting">Emergency stop button</string>
+    <string name="emergency_stop_explain">A long press on the ring screen stops the ring at once, without a challenge. Also in the ringing notification.</string>
+    <string name="emergency_stop_now">Stop all ringing now</string>
 </resources>

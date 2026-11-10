@@ -30,6 +30,17 @@ class AlarmTimeCalculatorTest {
     private val tlv = ZoneId.of("Asia/Jerusalem")
     private fun at(date: String, time: String) = ZonedDateTime.of(LocalDate.parse(date), LocalTime.parse(time), tlv)
 
+    @Test fun `once on a weekday rings at its next occurrence and then drops that day`() {
+        // 2026-10-20 is a Tuesday; "once on Thursday 10:00" rings this Thursday.
+        val days = setOf(DayOfWeek.THURSDAY, DayOfWeek.SUNDAY)
+        val next = AlarmTimeCalculator.nextTrigger(LocalTime.of(10, 0), days, at("2026-10-20", "08:00"))
+        assertEquals(at("2026-10-22", "10:00"), next)
+        val left = AlarmTimeCalculator.onceDaysAfterRing(days, next.dayOfWeek)
+        assertEquals(setOf(DayOfWeek.SUNDAY), left)
+        assertEquals(at("2026-10-25", "10:00"), AlarmTimeCalculator.nextTrigger(LocalTime.of(10, 0), left, next))
+        assertTrue(AlarmTimeCalculator.onceDaysAfterRing(left, DayOfWeek.SUNDAY).isEmpty())
+    }
+
     @Test fun oneShotLaterToday() {
         val next = AlarmTimeCalculator.nextTrigger(LocalTime.of(7, 0), emptySet(), at("2026-10-20", "06:00"))
         assertEquals(at("2026-10-20", "07:00"), next)

@@ -30,4 +30,10 @@ object AlarmTimeCalculator {
         }
         error("unreachable: a matching day always exists within 15 days")
     }
+
+    /**
+     * After a one-time ("once on these days") alarm rang for [rangOn], the days still to ring.
+     * Each chosen day rings once; when the set is empty the alarm turns off.
+     */
+    fun onceDaysAfterRing(days: Set<DayOfWeek>, rangOn: DayOfWeek): Set<DayOfWeek> = days - rangOn
 }

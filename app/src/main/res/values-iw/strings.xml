@@ -291,4 +291,18 @@
     <string name="demo_pri_truck">משלוח לאילת</string>
     <string name="demo_pri_retiree">הליכת בוקר עם החברים</string>
     <string name="demo_pri_grandparent">הנכדים באים לביקור</string>
+    <string name="goal_reminders_title">תזכיר לי במהלך היום</string>
+    <string name="goal_reminders_explain">תזכורות חד-פעמיות על המטרה, רק ביום הזה.</string>
+    <string name="goal_reminders_need_text">קודם כותבים מטרה, ואז בוחרים שעות לתזכורת.</string>
+    <string name="goal_reminder_other_time">שעה אחרת</string>
+    <string name="repeat_weekly">כל שבוע</string>
+    <string name="repeat_once_on_days">פעם אחת בלבד</string>
+    <string name="once_on_days_explain">מצלצל פעם אחת ביום הקרוב מכל יום שנבחר, ואז נכבה.</string>
+    <string name="once_on">פעם אחת: %1$s</string>
+    <string name="emergency_stop">יציאת חירום</string>
+    <string name="emergency_stop_hold">לחיצה ארוכה ליציאת חירום</string>
+    <string name="dev_title">פיתוח</string>
+    <string name="emergency_stop_setting">כפתור יציאת חירום</string>
+    <string name="emergency_stop_explain">לחיצה ארוכה במסך הצלצול עוצרת מיד את הצלצול, בלי אתגר. זמין גם בהתראת הצלצול.</string>
+    <string name="emergency_stop_now">עצור עכשיו כל צלצול</string>
 </resources>

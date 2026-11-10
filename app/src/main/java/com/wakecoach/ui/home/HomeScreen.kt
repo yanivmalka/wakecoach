@@ -1,6 +1,7 @@
 package com.wakecoach.ui.home
 
 import com.wakecoach.data.repeatDays
+import com.wakecoach.data.isWeekly
 import com.wakecoach.data.time
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -146,16 +147,20 @@ private fun AlarmRow(alarm: AlarmEntity, onClick: () -> Unit, onToggle: (Boolean
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
-            val icon = if (alarm.alarmKind == AlarmKind.REMINDER) "🔔 " else "⏰ "
+            val icon = when (alarm.alarmKind) { AlarmKind.WAKE -> "⏰ "; AlarmKind.GOAL -> "🎯 "; else -> "🔔 " }
             Text(
                 icon + LocalTime.of(alarm.hour, alarm.minute).format(HHMM), fontSize = 44.sp, fontWeight = FontWeight.Light,
                 color = if (alarm.enabled) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
             )
-            val days = if (alarm.repeatDays.isEmpty()) stringResource(R.string.repeat_once)
-            else alarm.repeatDays.sorted().joinToString(" ") { it.getDisplayName(TextStyle.SHORT, Locale.getDefault()) }
-            val profile = if (alarm.alarmKind == AlarmKind.REMINDER) "" else stringResource(profileName(alarm.profileId))
+            val dayNames = alarm.repeatDays.sorted().joinToString(" ") { it.getDisplayName(TextStyle.SHORT, Locale.getDefault()) }
+            val days = when {
+                alarm.repeatDays.isEmpty() -> stringResource(R.string.repeat_once)
+                alarm.once -> stringResource(R.string.once_on, dayNames)
+                else -> dayNames
+            }
+            val profile = if (alarm.alarmKind.isNudge) "" else stringResource(profileName(alarm.profileId))
             // One-shots added for a later day carry an internal skip of today; only repeating alarms show it.
-            alarm.skipLocalDate?.takeIf { alarm.repeatDays.isNotEmpty() && !it.isBefore(LocalDate.now()) }?.let { skip ->
+            alarm.skipLocalDate?.takeIf { alarm.isWeekly && !it.isBefore(LocalDate.now()) }?.let { skip ->
                 Text(
                     "⏭ " + stringResource(R.string.skipping_on, skip.format(DateTimeFormatter.ofPattern("EEEE d/M"))),
                     fontSize = 15.sp, color = MaterialTheme.colorScheme.primary,

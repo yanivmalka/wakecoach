@@ -184,7 +184,8 @@ class MainActivity : ComponentActivity() {
                     )
                     Screen.Evening -> EveningScreen(
                         load = vm::tomorrowPriority,
-                        onSave = { vm.saveTomorrowPriority(it); screen = Screen.Home },
+                        loadReminders = vm::tomorrowGoalReminders,
+                        onSave = { text, times -> vm.saveTomorrowPriority(text, times); screen = Screen.Home },
                         onCancel = { screen = Screen.Home },
                     )
                     Screen.Settings -> SettingsScreen(
@@ -198,6 +199,7 @@ class MainActivity : ComponentActivity() {
                         calendarConnected = resumes.let { container.calendar.hasPermission() },
                         onConnectCalendar = { askPermission.launch(Manifest.permission.READ_CALENDAR) },
                         onWakeCheckChange = { on -> vm.updateSettings { it.copy(wakeCheck = on) } },
+                        onEmergencyStop = { container.ringController.emergencyStop() },
                         onCheckGuard = { screen = Screen.Guard(GuardNotifier.window(LocalDateTime.now()).first) },
                         onCheckUpdates = {
                             showUpdate = true

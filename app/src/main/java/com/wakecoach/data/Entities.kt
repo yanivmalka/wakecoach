@@ -27,6 +27,12 @@ data class AlarmEntity(
     val soundUri: String? = null,
     /** "Skip once": epoch day whose occurrence is passed over; null when not skipping. */
     val skipDate: Long? = null,
+    /**
+     * One-time on the chosen [daysMask] days: each day rings once at its next occurrence and is
+     * then dropped; the alarm turns off when none are left. Default must match MIGRATION_5_6.
+     */
+    @ColumnInfo(defaultValue = "0")
+    val once: Boolean = false,
 ) {
     companion object {
         fun maskOf(days: Set<DayOfWeek>) = days.fold(0) { m, d -> m or (1 shl (d.value - 1)) }
@@ -39,6 +45,8 @@ val AlarmEntity.repeatDays: Set<DayOfWeek>
     get() = DayOfWeek.entries.filter { daysMask and (1 shl (it.value - 1)) != 0 }.toSet()
 val AlarmEntity.profile: Profile get() = Profiles.byId(profileId)
 val AlarmEntity.skipLocalDate: java.time.LocalDate? get() = skipDate?.let(java.time.LocalDate::ofEpochDay)
+/** Repeats every week on its days (not a one-shot, not "once on these days"). */
+val AlarmEntity.isWeekly: Boolean get() = daysMask != 0 && !once
 val AlarmEntity.alarmKind: AlarmKind get() = AlarmKind.entries.firstOrNull { it.name == kind } ?: AlarmKind.WAKE
 
 @Entity(tableName = "wake_sessions")

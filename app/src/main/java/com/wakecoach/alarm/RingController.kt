@@ -42,6 +42,8 @@ import com.wakecoach.data.SettingsRepository
 import com.wakecoach.data.WakeRepository
 import com.wakecoach.data.alarmKind
 import com.wakecoach.data.WakeSessionEntity
+import com.wakecoach.data.AlarmEntity
+import com.wakecoach.core.schedule.AlarmTimeCalculator
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import java.time.Duration
@@ -129,7 +131,8 @@ class RingController(
         // A "still awake?" check rings like a one-tap reminder, whatever the alarm normally is.
         val kind = if (request.mode == RingMode.ASK) AlarmKind.REMINDER else alarm.alarmKind
         // Only the first ring of a morning counts as a habit: not snoozes, not a re-delivered ring.
-        if (incoming.firstRingAt == 0L) guarded("ring log") { guard.logRing(alarm, now) }
+        // Goal reminders are one-offs with changing text: no habit to learn from them.
+        if (incoming.firstRingAt == 0L && alarm.alarmKind != AlarmKind.GOAL) guarded("ring log") { guard.logRing(alarm, now) }
         guarded("re-arm") {
             if (kind == AlarmKind.TEST) {
                 // A test ring is single-use; drop its row now so it never shows up or re-arms.
@@ -137,6 +140,15 @@ class RingController(
             } else if (request.snoozeCount == 0) {
                 // Arm the next occurrence now, so a never-dismissed alarm still rings tomorrow.
                 if (alarm.repeatDays.isEmpty()) repository.alarms.upsert(alarm.copy(enabled = false))
+                else if (alarm.once) {
+                    // "Once on these days": this day is done; ring the remaining ones, then turn off.
+                    val rangOn = Instant.ofEpochMilli(request.scheduledAt.takeIf { it > 0 } ?: now)
+                        .atZone(ZoneId.systemDefault()).dayOfWeek
+                    val left = AlarmTimeCalculator.onceDaysAfterRing(alarm.repeatDays, rangOn)
+                    val next = alarm.copy(daysMask = AlarmEntity.maskOf(left), enabled = left.isNotEmpty())
+                    repository.alarms.upsert(next)
+                    if (left.isNotEmpty()) scheduler.schedule(next)
+                }
                 else scheduler.schedule(alarm)
             }
         }
@@ -160,7 +172,11 @@ class RingController(
         } else if (kind.isNudge) {
             // A test has nothing to snooze to: its alarm row is already gone.
             val profile = if (kind == AlarmKind.TEST) Profiles.REMINDER.copy(snooze = SnoozePolicy(0, 0)) else Profiles.REMINDER
-            RingState(request, kind, alarm.label, profile, Challenge.None, message = alarm.label)
+            // A goal reminder says the goal as it stands now, even if it was edited after setting the reminder.
+            val label = if (kind == AlarmKind.GOAL) {
+                "🎯 " + (guarded("goal") { repository.priorityFor(LocalDate.now()) }?.takeIf { it.isNotBlank() } ?: alarm.label)
+            } else alarm.label
+            RingState(request, kind, label, profile, Challenge.None, message = label)
         } else {
             val profile = alarm.profile.let { p -> adapt?.let { p.copy(intensity = it.intensity) } ?: p }
             // A surprise morning always has a challenge, even on a no-challenge profile.
@@ -323,6 +339,24 @@ class RingController(
             if (settings.current().wakeCheck) {
                 wakeCheck.arm(s.request, scheduler, RelapseCheck.delayMinutes(s.profile.intensity))
             }
+        }
+    }
+
+    /**
+     * Emergency exit (development aid): silences everything no matter what state the ring is in,
+     * even if the screen froze or the state was lost. Records nothing and arms no re-ring.
+     * Next scheduled occurrences stay as they are.
+     */
+    fun emergencyStop() {
+        Log.w(TAG, "emergency stop")
+        runCatching { player.stop() }
+        runCatching { wakeCheck.clear() }
+        runCatching { scheduler.cancelWakeCheck() }
+        stop()
+        runCatching {
+            val nm = context.getSystemService(android.app.NotificationManager::class.java)
+            nm.cancel(NOTIF_FALLBACK)
+            nm.cancel(AlarmService.NOTIFICATION_ID)
         }
     }
 

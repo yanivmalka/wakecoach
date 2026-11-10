@@ -2,7 +2,9 @@ package com.wakecoach.ui.ringing
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.draggable
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -62,11 +64,45 @@ fun RingingScreen(
     onDismiss: () -> Unit,
     onSpeak: (String) -> Unit = {},
     onDuck: (Boolean) -> Unit = {},
+    onEmergencyStop: (() -> Unit)? = null,
 ) {
-    if (state.kind.isNudge) {
-        ReminderScreen(state, onSnooze = { onSnooze(it) }, onDismiss = onDismiss)
-        return
+    Box(Modifier.fillMaxSize()) {
+        if (state.kind.isNudge) ReminderScreen(state, onSnooze = { onSnooze(it) }, onDismiss = onDismiss)
+        else WakeScreen(state, leftHanded, onSnooze, onDismiss, onSpeak, onDuck)
+        if (onEmergencyStop != null) {
+            EmergencyStopButton(onEmergencyStop, Modifier.align(Alignment.TopCenter).safeDrawingPadding().padding(top = 8.dp))
+        }
     }
+}
+
+/**
+ * Development escape hatch: a long press stops the ring outright, skipping the slide and the
+ * challenge. A long press (not a tap) so a sleepy hand does not hit it by reflex.
+ */
+@Composable
+private fun EmergencyStopButton(onStop: () -> Unit, modifier: Modifier = Modifier) {
+    Box(
+        modifier
+            .background(MaterialTheme.colorScheme.errorContainer, RoundedCornerShape(16.dp))
+            .pointerInput(Unit) { detectTapGestures(onLongPress = { onStop() }) }
+            .padding(horizontal = 14.dp, vertical = 6.dp),
+    ) {
+        Text(
+            "🛑 " + stringResource(R.string.emergency_stop_hold), fontSize = 13.sp,
+            color = MaterialTheme.colorScheme.onErrorContainer,
+        )
+    }
+}
+
+@Composable
+private fun WakeScreen(
+    state: RingState,
+    leftHanded: Boolean,
+    onSnooze: (Int?) -> Unit,
+    onDismiss: () -> Unit,
+    onSpeak: (String) -> Unit,
+    onDuck: (Boolean) -> Unit,
+) {
     var now by remember { mutableStateOf(LocalTime.now()) }
     LaunchedEffect(Unit) { while (true) { now = LocalTime.now(); delay(1000) } }
     var slid by remember { mutableStateOf(false) }
@@ -179,7 +215,7 @@ private fun ReminderScreen(state: RingState, onSnooze: (Int) -> Unit, onDismiss:
         Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).safeDrawingPadding().padding(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(44.dp))
         Text("🔔", fontSize = 56.sp)
         BigDigits(now.format(DateTimeFormatter.ofPattern("HH:mm")), Modifier.fillMaxWidth().height(110.dp))
         Spacer(Modifier.height(16.dp))

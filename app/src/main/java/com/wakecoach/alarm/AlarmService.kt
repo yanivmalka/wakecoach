@@ -33,6 +33,7 @@ class AlarmService : Service() {
             .setFullScreenIntent(ui, true)
             .setContentIntent(ui)
             .setOngoing(true)
+            .addAction(0, getString(R.string.emergency_stop), EmergencyStopReceiver.pendingIntent(this))
             .build()
         // Must be called promptly after startForegroundService, before any async work.
         ServiceCompat.startForeground(this, NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
@@ -47,6 +48,6 @@ class AlarmService : Service() {
     }
 
     companion object {
-        private const val NOTIFICATION_ID = 1
+        const val NOTIFICATION_ID = 1
     }
 }

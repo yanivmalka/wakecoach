@@ -42,6 +42,8 @@ data class UserSettings(
     val fakeCall: Boolean = true,
     /** Extra names for the simulated call, besides people who recorded messages. */
     val callNames: String = "",
+    /** Show the long-press "emergency stop" on the ring screen (a development aid). */
+    val emergencyStop: Boolean = true,
 )
 
 class SettingsRepository(private val context: Context) {
@@ -63,6 +65,7 @@ class SettingsRepository(private val context: Context) {
         val CLOCK_AHEAD = booleanPreferencesKey("clock_ahead")
         val FAKE_CALL = booleanPreferencesKey("fake_call")
         val CALL_NAMES = stringPreferencesKey("call_names")
+        val EMERGENCY_STOP = booleanPreferencesKey("emergency_stop")
     }
 
     val settings: Flow<UserSettings> = context.dataStore.data.map {
@@ -85,6 +88,7 @@ class SettingsRepository(private val context: Context) {
             clockAhead = it[Keys.CLOCK_AHEAD] ?: false,
             fakeCall = it[Keys.FAKE_CALL] ?: true,
             callNames = it[Keys.CALL_NAMES].orEmpty(),
+            emergencyStop = it[Keys.EMERGENCY_STOP] ?: true,
         )
     }
 
@@ -110,6 +114,7 @@ class SettingsRepository(private val context: Context) {
             it[Keys.CLOCK_AHEAD] = next.clockAhead
             it[Keys.FAKE_CALL] = next.fakeCall
             it[Keys.CALL_NAMES] = next.callNames
+            it[Keys.EMERGENCY_STOP] = next.emergencyStop
         }
     }
 }

@@ -97,6 +97,15 @@ class AlarmScheduler(
         else am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, pi)
     }
 
+    fun cancelWakeCheck() {
+        am.cancel(
+            PendingIntent.getBroadcast(
+                context, WAKE_CHECK_CODE, Intent(context, WakeCheckReceiver::class.java),
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
+        )
+    }
+
     /** Fires a ring right now (used by the relapse check), through the normal ring path. */
     fun ringNow(request: RingRequest) {
         setAlarmClock(System.currentTimeMillis() + 1_000, ringIntent(request.alarmId.toInt() + RELAPSE_OFFSET, request))

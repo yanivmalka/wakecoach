@@ -56,7 +56,7 @@ class RingingActivity : ComponentActivity() {
         setContent {
             WakeCoachTheme(ThemeMode.DARK) {
                 val state by controller.state.collectAsStateWithLifecycle()
-                val leftHanded by container.settings.settings.collectAsStateWithLifecycle(null)
+                val prefs by container.settings.settings.collectAsStateWithLifecycle(null)
                 val scope = rememberCoroutineScope()
                 // No escaping the alarm with the back button.
                 BackHandler { }
@@ -85,7 +85,9 @@ class RingingActivity : ComponentActivity() {
                 } else {
                     RingingScreen(
                         state = s,
-                        leftHanded = leftHanded?.leftHanded ?: false,
+                        leftHanded = prefs?.leftHanded ?: false,
+                        // Shown unless turned off in Settings (on by default while in development).
+                        onEmergencyStop = if (prefs?.emergencyStop != false) ({ controller.emergencyStop(); finish() }) else null,
                         onSnooze = { minutes ->
                             // A repeat snooze on a wake-up "calls" someone first (simulated only).
                             val call = s.callName?.takeIf {
