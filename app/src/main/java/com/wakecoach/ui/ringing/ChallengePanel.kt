@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.wakecoach.R
 import com.wakecoach.core.challenge.Challenge
+import com.wakecoach.core.motion.WalkDetector
 import com.wakecoach.ui.theme.BigTouch
 import kotlin.math.sqrt
 
@@ -54,10 +55,10 @@ fun ChallengePanel(challenge: Challenge, onSolved: () -> Unit, onDuck: (Boolean)
                 prompt = stringResource(R.string.challenge_phrase), shown = challenge.phrase,
                 keyboard = KeyboardType.Text, check = challenge::check, onSolved = onSolved,
             )
-            is Challenge.Shake -> MotionChallenge(challenge.shakes, steps = false, onSolved)
-            is Challenge.Steps -> MotionChallenge(challenge.steps, steps = true, onSolved)
+            is Challenge.Shake -> MotionChallenge(challenge.shakes, onSolved)
+            is Challenge.Steps -> WalkChallenge(challenge.steps, onSolved)
             // Scanner arrives in a later phase; the generator never produces this without a registered code.
-            is Challenge.ScanCode -> MotionChallenge(30, steps = true, onSolved)
+            is Challenge.ScanCode -> WalkChallenge(30, onSolved)
             is Challenge.Breathe -> BreatheChallenge(challenge, onSolved)
             is Challenge.Voice -> VoiceChallenge(challenge, onSolved, onDuck)
             is Challenge.StandUp -> StandUpChallenge(challenge.seconds, onSolved)
@@ -91,43 +92,85 @@ private fun AnswerChallenge(
     ) { Text(stringResource(R.string.check), fontSize = 22.sp) }
 }
 
-/**
- * Counts shakes (accelerometer spikes) or steps (step detector). Without the step sensor or
- * the activity-recognition permission, steps fall back to shakes so the alarm stays solvable.
- */
+/** Counts hard shakes (accelerometer spikes). */
 @Composable
-private fun MotionChallenge(target: Int, steps: Boolean, onSolved: () -> Unit) {
+private fun MotionChallenge(target: Int, onSolved: () -> Unit) {
     val context = LocalContext.current
-    val useSteps = steps && hasStepDetector(context)
     var count by remember { mutableIntStateOf(0) }
 
-    DisposableEffect(useSteps) {
+    DisposableEffect(Unit) {
         val sm = context.getSystemService(SensorManager::class.java)
         var lastShake = 0L
         var done = false
         val listener = object : SensorEventListener {
             override fun onSensorChanged(e: SensorEvent) {
                 if (done) return
-                if (useSteps) count++
-                else {
-                    val (x, y, z) = e.values
-                    val g = sqrt(x * x + y * y + z * z) / SensorManager.GRAVITY_EARTH
-                    if (g > SHAKE_G && e.timestamp - lastShake > SHAKE_GAP_NS) { lastShake = e.timestamp; count++ }
-                }
+                val (x, y, z) = e.values
+                val g = sqrt(x * x + y * y + z * z) / SensorManager.GRAVITY_EARTH
+                if (g > SHAKE_G && e.timestamp - lastShake > SHAKE_GAP_NS) { lastShake = e.timestamp; count++ }
                 if (count >= target) { done = true; onSolved() }
             }
             override fun onAccuracyChanged(s: Sensor?, a: Int) = Unit
         }
-        val sensor = sm.getDefaultSensor(if (useSteps) Sensor.TYPE_STEP_DETECTOR else Sensor.TYPE_ACCELEROMETER)
-        sm.registerListener(listener, sensor, SensorManager.SENSOR_DELAY_GAME)
+        sm.registerListener(listener, sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_GAME)
         onDispose { sm.unregisterListener(listener) }
     }
 
     val left = (target - count).coerceAtLeast(0)
-    Text(
-        if (useSteps) stringResource(R.string.challenge_steps, left) else stringResource(R.string.challenge_shake, left),
-        fontSize = 24.sp, textAlign = TextAlign.Center,
-    )
+    Text(stringResource(R.string.challenge_shake, left), fontSize = 24.sp, textAlign = TextAlign.Center)
+    LinearProgressIndicator(progress = { count / target.toFloat() }, modifier = Modifier.fillMaxWidth().heightIn(min = 12.dp))
+}
+
+/**
+ * Walking challenge. The system step detector is accurate but batched: it often reports nothing
+ * for the first 5-10 seconds, so on its own the challenge feels stuck and people end up shaking
+ * the phone. An accelerometer [WalkDetector] counts each stride at once; whichever count is ahead
+ * wins. Without the step sensor or its permission, the accelerometer alone still counts walking,
+ * so no hard shaking is ever needed.
+ */
+@Composable
+private fun WalkChallenge(target: Int, onSolved: () -> Unit) {
+    val context = LocalContext.current
+    var count by remember { mutableIntStateOf(0) }
+
+    DisposableEffect(Unit) {
+        val sm = context.getSystemService(SensorManager::class.java)
+        val walk = WalkDetector()
+        var systemSteps = 0
+        var done = false
+        fun update() {
+            count = maxOf(walk.steps, systemSteps)
+            if (!done && count >= target) { done = true; onSolved() }
+        }
+        val accel = object : SensorEventListener {
+            override fun onSensorChanged(e: SensorEvent) {
+                if (done) return
+                val (x, y, z) = e.values
+                if (walk.onSample(sqrt(x * x + y * y + z * z) / SensorManager.GRAVITY_EARTH, e.timestamp)) update()
+            }
+            override fun onAccuracyChanged(s: Sensor?, a: Int) = Unit
+        }
+        val stepper = object : SensorEventListener {
+            override fun onSensorChanged(e: SensorEvent) {
+                if (done) return
+                systemSteps++
+                update()
+            }
+            override fun onAccuracyChanged(s: Sensor?, a: Int) = Unit
+        }
+        sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)?.let { sm.registerListener(accel, it, SensorManager.SENSOR_DELAY_GAME) }
+        if (hasStepDetector(context)) {
+            sm.registerListener(stepper, sm.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR), SensorManager.SENSOR_DELAY_FASTEST)
+        }
+        onDispose {
+            sm.unregisterListener(accel)
+            sm.unregisterListener(stepper)
+        }
+    }
+
+    val left = (target - count).coerceAtLeast(0)
+    Text(stringResource(R.string.challenge_steps, left), fontSize = 24.sp, textAlign = TextAlign.Center)
+    Text(stringResource(R.string.challenge_steps_hint), fontSize = 15.sp, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant)
     LinearProgressIndicator(progress = { count / target.toFloat() }, modifier = Modifier.fillMaxWidth().heightIn(min = 12.dp))
 }
 

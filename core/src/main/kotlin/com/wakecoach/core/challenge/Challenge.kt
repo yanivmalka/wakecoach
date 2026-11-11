@@ -71,10 +71,10 @@ class ChallengeGenerator(private val random: Random = Random.Default) {
         ChallengeType.TYPE_PHRASE ->
             if (phrases.isEmpty()) math(intensity) else Challenge.TypePhrase(phrases.random(random))
         ChallengeType.SHAKE -> Challenge.Shake(shakes = 15 * intensity.level)
-        ChallengeType.STEPS -> Challenge.Steps(steps = 10 + 10 * intensity.level)
+        ChallengeType.STEPS -> Challenge.Steps(steps = 10 + 8 * intensity.level)
         // Without a registered code the scan challenge cannot be solved; fall back to steps.
         ChallengeType.SCAN_CODE ->
-            registeredCode?.let { Challenge.ScanCode(it) } ?: Challenge.Steps(10 + 10 * intensity.level)
+            registeredCode?.let { Challenge.ScanCode(it) } ?: Challenge.Steps(10 + 8 * intensity.level)
         ChallengeType.BREATHE -> Challenge.Breathe(rounds = 2 + intensity.level)
         ChallengeType.VOICE -> Challenge.Voice(VoiceQuestion.entries.random(random), minWords = 2 + intensity.level / 2)
         ChallengeType.STAND_UP -> Challenge.StandUp(seconds = 4 + 2 * intensity.level)

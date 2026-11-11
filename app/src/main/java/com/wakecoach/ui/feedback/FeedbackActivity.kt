@@ -19,7 +19,12 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.FilledTonalButton
+import androidx.annotation.ArrayRes
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Surface
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.stringArrayResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -79,7 +84,7 @@ class FeedbackActivity : ComponentActivity() {
                     var tired by remember { mutableStateOf<Int?>(null) }
                     Screen(
                         title = stringResource(R.string.notif_followup_title), message = "",
-                        questions = listOf(stringResource(R.string.q_later_tiredness) to tired),
+                        questions = listOf(Question(stringResource(R.string.q_later_tiredness), R.array.scale_tiredness, tired)),
                         onAnswer = { _, v -> tired = v },
                         onDone = {
                             tired?.let { lifecycleScope.launch { repo.saveLaterTiredness(sessionId, it); finish() } } ?: finish()
@@ -90,9 +95,9 @@ class FeedbackActivity : ComponentActivity() {
                     Screen(
                         title = stringResource(R.string.feedback_title), message = message,
                         questions = listOf(
-                            stringResource(R.string.q_mood) to answers[0],
-                            stringResource(R.string.q_wake_ease) to answers[1],
-                            stringResource(R.string.q_tiredness) to answers[2],
+                            Question(stringResource(R.string.q_mood), R.array.scale_mood, answers[0]),
+                            Question(stringResource(R.string.q_wake_ease), R.array.scale_wake_ease, answers[1]),
+                            Question(stringResource(R.string.q_tiredness), R.array.scale_tiredness, answers[2]),
                         ),
                         onAnswer = { i, v -> answers = answers.toMutableList().also { it[i] = v } },
                         onDone = {
@@ -126,11 +131,14 @@ class FeedbackActivity : ComponentActivity() {
     }
 }
 
+/** A 1-5 question; [scale] names each value for this question (tired 5 is not alert 5). */
+private data class Question(val text: String, @ArrayRes val scale: Int, val value: Int?)
+
 @Composable
 private fun Screen(
     title: String,
     message: String,
-    questions: List<Pair<String, Int?>>,
+    questions: List<Question>,
     onAnswer: (Int, Int) -> Unit,
     onDone: () -> Unit,
 ) {
@@ -141,12 +149,12 @@ private fun Screen(
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(18.dp)) {
             Text(title, fontSize = 28.sp)
             if (message.isNotBlank()) Text(message, fontSize = 20.sp, color = MaterialTheme.colorScheme.primary)
-            questions.forEachIndexed { i, (q, value) ->
-                Text(q, fontSize = 20.sp)
-                RatingRow(value) { onAnswer(i, it) }
+            questions.forEachIndexed { i, q ->
+                Text(q.text, fontSize = 20.sp)
+                RatingRow(q.value, stringArrayResource(q.scale).toList()) { onAnswer(i, it) }
             }
         }
-        val complete = questions.all { it.second != null }
+        val complete = questions.all { it.value != null }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             TextButton(onClick = onDone, modifier = Modifier.heightIn(min = BigTouch)) { Text(stringResource(R.string.skip)) }
             Spacer(Modifier.weight(1f))
@@ -157,15 +165,30 @@ private fun Screen(
     }
 }
 
+/** Five buttons, each showing its number and what it means for this question. */
 @Composable
-private fun RatingRow(value: Int?, onPick: (Int) -> Unit) {
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+private fun RatingRow(value: Int?, labels: List<String>, onPick: (Int) -> Unit) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         (1..5).forEach { n ->
-            val modifier = Modifier.weight(1f).heightIn(min = BigTouch)
-            if (value == n) {
-                Button(onClick = { onPick(n) }, modifier = modifier) { Text("$n", fontSize = 24.sp, textAlign = TextAlign.Center) }
-            } else {
-                FilledTonalButton(onClick = { onPick(n) }, modifier = modifier) { Text("$n", fontSize = 24.sp) }
+            val selected = value == n
+            Surface(
+                onClick = { onPick(n) },
+                shape = RoundedCornerShape(16.dp),
+                color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer,
+                contentColor = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = Modifier.weight(1f).heightIn(min = BigTouch + 20.dp),
+            ) {
+                Column(
+                    Modifier.padding(horizontal = 2.dp, vertical = 6.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    Text("$n", fontSize = 24.sp, fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal)
+                    Text(
+                        labels.getOrElse(n - 1) { "" }, fontSize = 12.sp, lineHeight = 14.sp,
+                        textAlign = TextAlign.Center, maxLines = 2,
+                    )
+                }
             }
         }
     }

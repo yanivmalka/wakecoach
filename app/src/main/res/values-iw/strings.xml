@@ -305,4 +305,26 @@
     <string name="emergency_stop_setting">כפתור יציאת חירום</string>
     <string name="emergency_stop_explain">לחיצה ארוכה במסך הצלצול עוצרת מיד את הצלצול, בלי אתגר. זמין גם בהתראת הצלצול.</string>
     <string name="emergency_stop_now">עצור עכשיו כל צלצול</string>
+    <string-array name="scale_mood">
+        <item>גרוע</item>
+        <item>לא טוב</item>
+        <item>בסדר</item>
+        <item>טוב</item>
+        <item>מצוין</item>
+    </string-array>
+    <string-array name="scale_wake_ease">
+        <item>קשה מאוד</item>
+        <item>קשה</item>
+        <item>סביר</item>
+        <item>קל</item>
+        <item>קל מאוד</item>
+    </string-array>
+    <string-array name="scale_tiredness">
+        <item>ערני לגמרי</item>
+        <item>ערני</item>
+        <item>קצת עייף</item>
+        <item>עייף</item>
+        <item>מותש</item>
+    </string-array>
+    <string name="challenge_steps_hint">הסתובב בחדר עם הטלפון ביד</string>
 </resources>

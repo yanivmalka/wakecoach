@@ -304,4 +304,28 @@
     <string name="emergency_stop_setting">Emergency stop button</string>
     <string name="emergency_stop_explain">A long press on the ring screen stops the ring at once, without a challenge. Also in the ringing notification.</string>
     <string name="emergency_stop_now">Stop all ringing now</string>
+    <!-- 1-5 check-in scales: what each value means for that question (1 first). -->
+    <string-array name="scale_mood">
+        <item>Awful</item>
+        <item>Low</item>
+        <item>OK</item>
+        <item>Good</item>
+        <item>Great</item>
+    </string-array>
+    <string-array name="scale_wake_ease">
+        <item>Very hard</item>
+        <item>Hard</item>
+        <item>So-so</item>
+        <item>Easy</item>
+        <item>Very easy</item>
+    </string-array>
+    <!-- Higher = more tired; the adaptive engine relies on this direction. -->
+    <string-array name="scale_tiredness">
+        <item>Wide awake</item>
+        <item>Alert</item>
+        <item>A bit tired</item>
+        <item>Tired</item>
+        <item>Exhausted</item>
+    </string-array>
+    <string name="challenge_steps_hint">Walk around the room with the phone in your hand</string>
 </resources>
