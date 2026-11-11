@@ -51,6 +51,15 @@ sealed interface Challenge {
         override val type = ChallengeType.STAND_UP
     }
 
+    /**
+     * "Catch the sun": each round shows a grid of night symbols with one sun in a new place; tap
+     * it. Needs open eyes and a moving hand, not concentration. A wrong tap costs nothing.
+     */
+    data class CatchSun(val boards: List<SunBoard>) : Challenge {
+        override val type = ChallengeType.CATCH_SUN
+        val rounds: Int get() = boards.size
+    }
+
     /** User registered a barcode/QR somewhere away from the bed (e.g. the bathroom). */
     data class ScanCode(val expected: String) : Challenge {
         override val type = ChallengeType.SCAN_CODE
@@ -68,8 +77,9 @@ class ChallengeGenerator(private val random: Random = Random.Default) {
     ): Challenge = when (type) {
         ChallengeType.NONE -> Challenge.None
         ChallengeType.MATH -> math(intensity)
+        ChallengeType.CATCH_SUN -> catchSun(intensity)
         ChallengeType.TYPE_PHRASE ->
-            if (phrases.isEmpty()) math(intensity) else Challenge.TypePhrase(phrases.random(random))
+            if (phrases.isEmpty()) catchSun(intensity) else Challenge.TypePhrase(phrases.random(random))
         ChallengeType.SHAKE -> Challenge.Shake(shakes = 15 * intensity.level)
         ChallengeType.STEPS -> Challenge.Steps(steps = 10 + 8 * intensity.level)
         // Without a registered code the scan challenge cannot be solved; fall back to steps.
@@ -99,6 +109,28 @@ class ChallengeGenerator(private val random: Random = Random.Default) {
         }
     }
 
+    /**
+     * Gentle mornings: few rounds on a 3x3 grid. Harder ones: more rounds on 4x4, and the hardest
+     * adds a full moon, the one look-alike, so the eyes have to actually open.
+     */
+    fun catchSun(intensity: Intensity): Challenge.CatchSun {
+        val (rounds, columns) = when (intensity) {
+            Intensity.GENTLE -> 4 to 3
+            Intensity.BALANCED -> 5 to 3
+            Intensity.FIRM -> 6 to 4
+            Intensity.HARDCORE -> 7 to 4
+        }
+        val decoys = if (intensity == Intensity.HARDCORE) SunBoard.NIGHT + SunBoard.LOOKALIKE else SunBoard.NIGHT
+        var last = -1
+        val boards = List(rounds) {
+            val cells = columns * columns
+            // Never the same cell twice in a row, so each round needs a fresh look.
+            val sun = (0 until cells).filter { it != last }.random(random).also { last = it }
+            SunBoard(columns, List(cells) { i -> if (i == sun) SunBoard.SUN else decoys.random(random) }, sun)
+        }
+        return Challenge.CatchSun(boards)
+    }
+
     /** Picks one of the profile's challenge types at random each morning to avoid habituation. */
     fun pickType(allowed: List<ChallengeType>): ChallengeType =
         if (allowed.isEmpty()) ChallengeType.NONE else allowed.random(random)
@@ -106,3 +138,14 @@ class ChallengeGenerator(private val random: Random = Random.Default) {
 
 /** Questions for the voice challenge; the app localizes them. */
 enum class VoiceQuestion { FIRST_TASK, GRATEFUL, WHY_UP, TODAY_GOAL }
+
+/** One round of [Challenge.CatchSun]: a square grid, row by row, with the sun at [sunIndex]. */
+data class SunBoard(val columns: Int, val cells: List<String>, val sunIndex: Int) {
+    fun isSun(index: Int): Boolean = index == sunIndex
+
+    companion object {
+        const val SUN = "☀️"
+        val NIGHT = listOf("🌙", "⭐", "☁️", "💤", "🌑")
+        const val LOOKALIKE = "🌕"
+    }
+}

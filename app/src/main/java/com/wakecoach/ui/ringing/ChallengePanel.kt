@@ -9,6 +9,13 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.Build
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Surface
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -55,6 +62,7 @@ fun ChallengePanel(challenge: Challenge, onSolved: () -> Unit, onDuck: (Boolean)
                 prompt = stringResource(R.string.challenge_phrase), shown = challenge.phrase,
                 keyboard = KeyboardType.Text, check = challenge::check, onSolved = onSolved,
             )
+            is Challenge.CatchSun -> CatchSunChallenge(challenge, onSolved)
             is Challenge.Shake -> MotionChallenge(challenge.shakes, onSolved)
             is Challenge.Steps -> WalkChallenge(challenge.steps, onSolved)
             // Scanner arrives in a later phase; the generator never produces this without a registered code.
@@ -172,6 +180,50 @@ private fun WalkChallenge(target: Int, onSolved: () -> Unit) {
     Text(stringResource(R.string.challenge_steps, left), fontSize = 24.sp, textAlign = TextAlign.Center)
     Text(stringResource(R.string.challenge_steps_hint), fontSize = 15.sp, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant)
     LinearProgressIndicator(progress = { count / target.toFloat() }, modifier = Modifier.fillMaxWidth().heightIn(min = 12.dp))
+}
+
+/**
+ * "Catch the sun": tap the one sun among night symbols, a few rounds. Big cells, no typing, no
+ * thinking; a wrong tap only says so and the same board stays.
+ */
+@Composable
+private fun CatchSunChallenge(challenge: Challenge.CatchSun, onSolved: () -> Unit) {
+    val haptic = LocalHapticFeedback.current
+    var round by remember { mutableIntStateOf(0) }
+    var missed by remember { mutableStateOf(false) }
+    val board = challenge.boards[round.coerceAtMost(challenge.rounds - 1)]
+
+    Text(stringResource(R.string.challenge_catch_sun, round + 1, challenge.rounds), fontSize = 22.sp, textAlign = TextAlign.Center)
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        board.cells.chunked(board.columns).forEachIndexed { row, cells ->
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                cells.forEachIndexed { col, symbol ->
+                    val index = row * board.columns + col
+                    Surface(
+                        onClick = {
+                            if (board.isSun(index)) {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                missed = false
+                                if (round + 1 >= challenge.rounds) onSolved() else round++
+                            } else missed = true
+                        },
+                        shape = RoundedCornerShape(16.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        modifier = Modifier.weight(1f).aspectRatio(1f),
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(symbol, fontSize = if (board.columns <= 3) 44.sp else 34.sp)
+                        }
+                    }
+                }
+            }
+        }
+    }
+    Text(
+        if (missed) stringResource(R.string.challenge_catch_sun_miss) else " ",
+        fontSize = 16.sp, color = MaterialTheme.colorScheme.error,
+    )
+    LinearProgressIndicator(progress = { round / challenge.rounds.toFloat() }, modifier = Modifier.fillMaxWidth().heightIn(min = 12.dp))
 }
 
 private fun hasStepDetector(context: Context): Boolean {

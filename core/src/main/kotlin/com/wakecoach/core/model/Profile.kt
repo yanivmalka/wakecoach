@@ -8,7 +8,11 @@ enum class Intensity(val level: Int) {
     fun stepDown(): Intensity = entries.getOrElse(ordinal - 1) { this }
 }
 
-enum class ChallengeType { NONE, MATH, TYPE_PHRASE, SHAKE, STEPS, SCAN_CODE, BREATHE, VOICE, STAND_UP }
+/**
+ * MATH stays for stored history but no profile uses it any more: mental arithmetic right after
+ * waking is unpleasant and unfamiliar to many people. CATCH_SUN replaced it.
+ */
+enum class ChallengeType { NONE, MATH, TYPE_PHRASE, SHAKE, STEPS, SCAN_CODE, BREATHE, VOICE, STAND_UP, CATCH_SUN }
 
 data class SnoozePolicy(
     val maxSnoozes: Int,
@@ -47,7 +51,7 @@ object Profiles {
     val BALANCED = Profile(
         id = "balanced",
         intensity = Intensity.BALANCED,
-        challenges = listOf(ChallengeType.MATH, ChallengeType.BREATHE),
+        challenges = listOf(ChallengeType.CATCH_SUN, ChallengeType.BREATHE),
         snooze = SnoozePolicy(maxSnoozes = 2, snoozeMinutes = 8, shrinkMinutes = 2),
         crescendoSeconds = 60,
         vibrate = true,
@@ -55,7 +59,7 @@ object Profiles {
     val FIRM = Profile(
         id = "firm",
         intensity = Intensity.FIRM,
-        challenges = listOf(ChallengeType.MATH, ChallengeType.TYPE_PHRASE, ChallengeType.SHAKE, ChallengeType.VOICE),
+        challenges = listOf(ChallengeType.CATCH_SUN, ChallengeType.TYPE_PHRASE, ChallengeType.SHAKE, ChallengeType.VOICE),
         snooze = SnoozePolicy(maxSnoozes = 1, snoozeMinutes = 5),
         crescendoSeconds = 30,
         vibrate = true,
@@ -63,7 +67,7 @@ object Profiles {
     val SOLDIER = Profile(
         id = "soldier",
         intensity = Intensity.HARDCORE,
-        challenges = listOf(ChallengeType.MATH, ChallengeType.STEPS),
+        challenges = listOf(ChallengeType.CATCH_SUN, ChallengeType.STEPS),
         snooze = SnoozePolicy(maxSnoozes = 0, snoozeMinutes = 0),
         crescendoSeconds = 5,
         vibrate = true,

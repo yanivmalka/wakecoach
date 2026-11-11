@@ -23,11 +23,11 @@
     <string name="profile_gentle">Gentle</string>
     <string name="profile_gentle_desc">Soft sound, 3 snoozes, no challenge</string>
     <string name="profile_balanced">Balanced</string>
-    <string name="profile_balanced_desc">Math or breathing, 2 shrinking snoozes</string>
+    <string name="profile_balanced_desc">Catch the sun or breathing, 2 shrinking snoozes</string>
     <string name="profile_firm">Firm</string>
     <string name="profile_firm_desc">Mixed challenges incl. a spoken answer, one short snooze</string>
     <string name="profile_soldier">Soldier</string>
-    <string name="profile_soldier_desc">No snooze. Math and walking. Up now.</string>
+    <string name="profile_soldier_desc">No snooze. Catch the sun and walking. Up now.</string>
     <string name="profile_heavy_sleeper">Heavy sleeper</string>
     <string name="profile_heavy_sleeper_desc">Fast and loud: walk, shake or stand up to stop</string>
 
@@ -328,4 +328,6 @@
         <item>Exhausted</item>
     </string-array>
     <string name="challenge_steps_hint">Walk around the room with the phone in your hand</string>
+    <string name="challenge_catch_sun">Tap the sun ☀️ (%1$d of %2$d)</string>
+    <string name="challenge_catch_sun_miss">That\'s not the sun, look again</string>
 </resources>

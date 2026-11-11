@@ -181,7 +181,7 @@ class RingController(
             val profile = alarm.profile.let { p -> adapt?.let { p.copy(intensity = it.intensity) } ?: p }
             // A surprise morning always has a challenge, even on a no-challenge profile.
             val types = if (adapt?.surprise == true && profile.challenges.all { it == ChallengeType.NONE }) {
-                listOf(ChallengeType.MATH)
+                listOf(ChallengeType.CATCH_SUN)
             } else profile.challenges
             val challenge = challenges.generate(
                 type = challenges.pickType(types),

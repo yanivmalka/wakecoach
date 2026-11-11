@@ -23,11 +23,11 @@
     <string name="profile_gentle">עדין</string>
     <string name="profile_gentle_desc">צליל רך, 3 נודניקים, בלי אתגר</string>
     <string name="profile_balanced">מאוזן</string>
-    <string name="profile_balanced_desc">חשבון או נשימות, 2 נודניקים מתקצרים</string>
+    <string name="profile_balanced_desc">תפוס את השמש או נשימות, 2 נודניקים מתקצרים</string>
     <string name="profile_firm">קשוח</string>
     <string name="profile_firm_desc">אתגרים משתנים כולל תשובה בקול, נודניק קצר אחד</string>
     <string name="profile_soldier">חייל</string>
-    <string name="profile_soldier_desc">בלי נודניק. חשבון והליכה. קמים עכשיו.</string>
+    <string name="profile_soldier_desc">בלי נודניק. תפוס את השמש והליכה. קמים עכשיו.</string>
     <string name="profile_heavy_sleeper">ישנוני כבד</string>
     <string name="profile_heavy_sleeper_desc">מהיר ורועש: ללכת, לנער או לקום כדי לכבות</string>
 
@@ -327,4 +327,6 @@
         <item>מותש</item>
     </string-array>
     <string name="challenge_steps_hint">הסתובב בחדר עם הטלפון ביד</string>
+    <string name="challenge_catch_sun">הקש על השמש ☀️ (%1$d מתוך %2$d)</string>
+    <string name="challenge_catch_sun_miss">זו לא השמש, נסה שוב</string>
 </resources>

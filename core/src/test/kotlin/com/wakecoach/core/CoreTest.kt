@@ -130,6 +130,25 @@ class ChallengeTest {
         assertFalse(Challenge.TypePhrase("Every morning is new").check("every morning"))
     }
 
+    @Test fun catchSunHasExactlyOneSunPerBoardAndMovesIt() {
+        Intensity.entries.forEach { level ->
+            repeat(30) {
+                val c = gen.catchSun(level)
+                assertTrue(c.rounds >= 4)
+                c.boards.forEach { b ->
+                    assertEquals(b.columns * b.columns, b.cells.size)
+                    assertEquals(1, b.cells.count { it == com.wakecoach.core.challenge.SunBoard.SUN })
+                    assertTrue(b.isSun(b.sunIndex))
+                }
+                c.boards.zipWithNext().forEach { (a, b) -> assertTrue(a.sunIndex != b.sunIndex) }
+            }
+        }
+    }
+
+    @Test fun noProfileAsksForMentalMath() {
+        assertTrue(Profiles.all.none { ChallengeType.MATH in it.challenges })
+    }
+
     @Test fun scanWithoutCodeFallsBackToSteps() {
         val c = gen.generate(ChallengeType.SCAN_CODE, Intensity.FIRM, emptyList(), registeredCode = null)
         assertTrue(c is Challenge.Steps)
