@@ -15,6 +15,7 @@ import com.wakecoach.data.DemoData
 import com.wakecoach.data.GuardRepository
 import com.wakecoach.data.RecordingRepository
 import com.wakecoach.data.QuoteRepository
+import com.wakecoach.data.ProfileRepository
 import com.wakecoach.data.SettingsRepository
 import com.wakecoach.data.WakeRepository
 import com.wakecoach.health.HealthChecker
@@ -67,8 +68,9 @@ class AppContainer(context: Context) {
     val calendar = CalendarRepository(context)
     val guard = GuardRepository(db, settings)
     val wakeCheck = WakeCheck(context)
+    val profiles = ProfileRepository(db, appScope)
     val ringController = RingController(
-        context, repository, scheduler, statusTracker, quotes, recordings, calendar, settings, guard, wakeCheck,
+        context, repository, scheduler, statusTracker, quotes, recordings, calendar, settings, guard, wakeCheck, profiles,
     )
     val updater = Updater(context)
     val health = HealthChecker(context, scheduler)

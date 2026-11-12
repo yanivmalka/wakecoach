@@ -29,6 +29,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,6 +49,28 @@ import com.wakecoach.core.challenge.Challenge
 import com.wakecoach.core.motion.WalkDetector
 import com.wakecoach.ui.theme.BigTouch
 import kotlin.math.sqrt
+
+/**
+ * Several challenges in a row (a custom profile's skills, light to heavy). Shows "step 2 of 3"
+ * and moves on as each is solved.
+ */
+@Composable
+fun ChallengeChain(chain: List<Challenge>, onSolved: () -> Unit, onDuck: (Boolean) -> Unit = {}) {
+    var index by remember(chain) { mutableIntStateOf(0) }
+    val current = chain.getOrNull(index) ?: return
+    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        if (chain.size > 1) {
+            Text(
+                stringResource(R.string.chain_step, index + 1, chain.size), fontSize = 15.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        // A fresh panel per step, so one step's state never leaks into the next.
+        key(index) {
+            ChallengePanel(current, onSolved = { if (index + 1 >= chain.size) onSolved() else index++ }, onDuck = onDuck)
+        }
+    }
+}
 
 @Composable
 fun ChallengePanel(challenge: Challenge, onSolved: () -> Unit, onDuck: (Boolean) -> Unit = {}) {

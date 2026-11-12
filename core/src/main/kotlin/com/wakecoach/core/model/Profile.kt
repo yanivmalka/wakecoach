@@ -37,6 +37,14 @@ data class Profile(
     /** Seconds from first sound to full volume. */
     val crescendoSeconds: Int,
     val vibrate: Boolean,
+    /**
+     * A user-made profile's skills, in order. Empty for built-in profiles, which pick one of
+     * [challenges] at random each morning instead.
+     */
+    val skills: List<com.wakecoach.core.skill.SkillConfig> = emptyList(),
+    val skillMode: com.wakecoach.core.skill.SkillMode = com.wakecoach.core.skill.SkillMode.CHAIN,
+    /** The user's own name for a custom profile; built-ins are named by the app. */
+    val customName: String? = null,
 )
 
 /** Built-in profiles the user picks from (requirement 5). Names are localized in the app. */

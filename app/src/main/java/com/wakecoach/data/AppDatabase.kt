@@ -9,9 +9,9 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
     entities = [AlarmEntity::class, WakeSessionEntity::class, FeedbackEntity::class, PriorityEntity::class, RecordingEntity::class,
-        RingLogEntity::class, GuardDecisionEntity::class,
+        RingLogEntity::class, GuardDecisionEntity::class, SkillPresetEntity::class, CustomProfileEntity::class,
     ],
-    version = 6,
+    version = 7,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -20,11 +20,12 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun priorities(): PriorityDao
     abstract fun recordings(): RecordingDao
     abstract fun guard(): GuardDao
+    abstract fun skills(): SkillDao
 
     companion object {
         fun create(context: Context): AppDatabase =
             Room.databaseBuilder(context, AppDatabase::class.java, "wakecoach.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
                 .build()
 
         /** 0.2: alarms gain a kind (wake-up or daytime reminder). Existing alarms are wake-ups. */
@@ -74,6 +75,24 @@ abstract class AppDatabase : RoomDatabase() {
         val MIGRATION_5_6 = object : Migration(5, 6) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE alarms ADD COLUMN once INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        /** 0.7: saved skills and user-made profiles. SQL mirrors the entities exactly. */
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `skill_presets` (" +
+                        "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, " +
+                        "`config` TEXT NOT NULL, `createdAt` INTEGER NOT NULL)"
+                )
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `custom_profiles` (" +
+                        "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, " +
+                        "`intensity` TEXT NOT NULL, `maxSnoozes` INTEGER NOT NULL, `snoozeMinutes` INTEGER NOT NULL, " +
+                        "`shrinkMinutes` INTEGER NOT NULL, `crescendoSeconds` INTEGER NOT NULL, `vibrate` INTEGER NOT NULL, " +
+                        "`skills` TEXT NOT NULL, `mode` TEXT NOT NULL)"
+                )
             }
         }
     }

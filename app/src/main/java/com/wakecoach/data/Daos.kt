@@ -93,3 +93,33 @@ interface GuardDao {
     @Query("DELETE FROM ring_log WHERE at < :before")
     suspend fun pruneRings(before: Long)
 }
+
+@Dao
+interface SkillDao {
+    @Query("SELECT * FROM skill_presets ORDER BY createdAt")
+    fun observePresets(): Flow<List<SkillPresetEntity>>
+
+    @Upsert
+    suspend fun savePreset(p: SkillPresetEntity): Long
+
+    @Delete
+    suspend fun deletePreset(p: SkillPresetEntity)
+
+    @Query("SELECT * FROM custom_profiles ORDER BY id")
+    fun observeProfiles(): Flow<List<CustomProfileEntity>>
+
+    @Query("SELECT * FROM custom_profiles WHERE id = :id")
+    suspend fun profile(id: Long): CustomProfileEntity?
+
+    @Upsert
+    suspend fun saveProfile(p: CustomProfileEntity): Long
+
+    @Delete
+    suspend fun deleteProfile(p: CustomProfileEntity)
+
+    @Query("UPDATE alarms SET profileId = :to WHERE profileId = :from")
+    suspend fun reassignAlarms(from: String, to: String)
+
+    @Query("SELECT COUNT(*) FROM alarms WHERE profileId = :profileId")
+    suspend fun alarmsUsing(profileId: String): Int
+}

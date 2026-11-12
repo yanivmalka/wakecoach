@@ -156,13 +156,13 @@ private fun WakeScreen(
         when {
             showStory -> StoryPanel(
                 story = state.story.orEmpty(),
-                onUp = { showStory = false; if (state.challenge is Challenge.None) onDismiss() else slid = true },
+                onUp = { showStory = false; if (!state.needsChallenge) onDismiss() else slid = true },
                 onSnoozeAnyway = { showStory = false; onSnooze(null) },
             )
             !slid -> SlideToStop(leftHanded) {
-                if (state.challenge is Challenge.None) onDismiss() else slid = true
+                if (!state.needsChallenge) onDismiss() else slid = true
             }
-            else -> ChallengePanel(state.challenge, onSolved = onDismiss, onDuck = onDuck)
+            else -> ChallengeChain(state.chain, onSolved = onDismiss, onDuck = onDuck)
         }
     }
 }
@@ -208,6 +208,7 @@ private fun SlideToStop(leftHanded: Boolean, onComplete: () -> Unit) {
 /** Daytime reminder: the label is the message, one tap to dismiss, pick a snooze length. */
 @Composable
 private fun ReminderScreen(state: RingState, onSnooze: (Int) -> Unit, onDismiss: () -> Unit) {
+    var solving by remember { mutableStateOf(false) }
     var now by remember { mutableStateOf(LocalTime.now()) }
     LaunchedEffect(Unit) { while (true) { now = LocalTime.now(); delay(1000) } }
 
@@ -225,7 +226,7 @@ private fun ReminderScreen(state: RingState, onSnooze: (Int) -> Unit, onDismiss:
         )
         Spacer(Modifier.weight(1f))
 
-        if (state.canSnooze) {
+        if (state.canSnooze && !solving) {
             Text(stringResource(R.string.remind_again_in), fontSize = 16.sp)
             Row(
                 Modifier.fillMaxWidth().padding(vertical = 12.dp),
@@ -238,8 +239,16 @@ private fun ReminderScreen(state: RingState, onSnooze: (Int) -> Unit, onDismiss:
                 }
             }
         }
-        Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth().heightIn(min = BigTouch + 16.dp)) {
-            Text(stringResource(R.string.reminder_done), fontSize = 24.sp)
+        // A reminder set to a custom profile wants its skills first; otherwise one tap is enough.
+        if (solving) {
+            ChallengeChain(state.chain, onSolved = onDismiss)
+        } else {
+            Button(
+                onClick = { if (state.needsChallenge) solving = true else onDismiss() },
+                modifier = Modifier.fillMaxWidth().heightIn(min = BigTouch + 16.dp),
+            ) {
+                Text(stringResource(R.string.reminder_done), fontSize = 24.sp)
+            }
         }
     }
 }

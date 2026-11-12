@@ -66,7 +66,7 @@ class BedtimeReceiver : BroadcastReceiver() {
             val minutes = ((lightsOut - System.currentTimeMillis()) / 60_000).coerceAtLeast(0)
             val event = c.calendar.firstMorningEvent(MorningDate.upcoming(LocalDateTime.now()))
             val text = listOfNotNull(
-                MessageComposer(Lang.of(Locale.getDefault())).bedtimeLine(minutes, priority),
+                MessageComposer(Lang.of(Locale.getDefault()), address = c.settings.current().address).bedtimeLine(minutes, priority),
                 event?.let { context.getString(R.string.event_tomorrow, it.start.format(DateTimeFormatter.ofPattern("HH:mm")), it.title) },
             ).joinToString("\n")
             val open = PendingIntent.getActivity(

@@ -39,6 +39,21 @@ import com.wakecoach.data.UserSettings
 import com.wakecoach.ui.components.DayCircles
 import com.wakecoach.ui.theme.BigTouch
 import com.wakecoach.ui.theme.ThemeMode
+import com.wakecoach.ui.theme.ThemePack
+import com.wakecoach.ui.theme.packScheme
+import com.wakecoach.ui.theme.isDark
+import com.wakecoach.ui.AddressApplier
+import com.wakecoach.core.message.Address
+import android.os.Build
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ColorScheme
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -57,6 +72,9 @@ fun SettingsScreen(
     onCheckGuard: () -> Unit,
     onWakeCheckChange: (Boolean) -> Unit,
     onEmergencyStop: () -> Unit,
+    onOpenSkills: () -> Unit,
+    onOpenProfiles: () -> Unit,
+    onAddressChange: (Address) -> Unit,
 ) {
     // Null until the user types, so the saved names show even if settings load after the screen.
     var names by remember { mutableStateOf<String?>(null) }
@@ -81,6 +99,35 @@ fun SettingsScreen(
                 )
             }
         }
+
+        Text(stringResource(R.string.look_pack), fontSize = 18.sp)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            val dark = settings.themeMode.isDark(isSystemInDarkTheme())
+            ThemePack.entries.filter { it != ThemePack.PHONE || Build.VERSION.SDK_INT >= 31 }.forEach { pack ->
+                PackSwatch(pack, packScheme(pack, dark), selected = settings.themePack == pack) {
+                    onChange { it.copy(themePack = pack) }
+                }
+            }
+        }
+
+        Text(stringResource(R.string.address_title), fontSize = 18.sp)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            listOf(
+                Address.MALE to R.string.address_male,
+                Address.FEMALE to R.string.address_female,
+                Address.UNSET to R.string.address_unset,
+            ).forEach { (a, label) ->
+                FilterChip(
+                    selected = settings.address == a, onClick = { onAddressChange(a) },
+                    label = { Text(stringResource(label), fontSize = 16.sp) },
+                    modifier = Modifier.heightIn(min = 48.dp),
+                )
+            }
+        }
+        Text(
+            stringResource(if (AddressApplier.supported) R.string.address_explain else R.string.address_explain_old),
+            fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
 
         Text(stringResource(R.string.hand), fontSize = 18.sp)
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -110,6 +157,13 @@ fun SettingsScreen(
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(stringResource(R.string.bedtime_reminders), fontSize = 18.sp, modifier = Modifier.weight(1f))
             Switch(checked = settings.bedtimeReminders, onCheckedChange = { b -> onChange { it.copy(bedtimeReminders = b) } })
+        }
+
+        OutlinedButton(onClick = onOpenSkills, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
+            Text("🧩 " + stringResource(R.string.skills_title), fontSize = 18.sp)
+        }
+        OutlinedButton(onClick = onOpenProfiles, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
+            Text("👤 " + stringResource(R.string.profiles_title), fontSize = 18.sp)
         }
 
         Text(stringResource(R.string.morning_content), fontSize = 18.sp)
@@ -231,4 +285,36 @@ fun SettingsScreen(
             Text(stringResource(R.string.done), fontSize = 20.sp)
         }
     }
+}
+
+/** A small card in the pack's own colors: its name on the background, with the accent and a surface. */
+@Composable
+private fun PackSwatch(pack: ThemePack, scheme: ColorScheme, selected: Boolean, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(16.dp)
+    Column(
+        Modifier.width(96.dp)
+            .border(if (selected) 3.dp else 1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline, shape)
+            .background(scheme.background, shape).clickable(onClick = onClick).padding(10.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            Box(Modifier.size(22.dp).background(scheme.primary, CircleShape))
+            Box(Modifier.size(22.dp).background(scheme.surfaceVariant, CircleShape))
+            Box(Modifier.size(22.dp).background(scheme.secondary, CircleShape))
+        }
+        Text(stringResource(packName(pack)), fontSize = 13.sp, color = scheme.onBackground, maxLines = 1)
+        if (selected) Text("✓", fontSize = 14.sp, color = scheme.primary)
+    }
+}
+
+@androidx.annotation.StringRes
+private fun packName(pack: ThemePack): Int = when (pack) {
+    ThemePack.SUNRISE -> R.string.pack_sunrise
+    ThemePack.OCEAN -> R.string.pack_ocean
+    ThemePack.FOREST -> R.string.pack_forest
+    ThemePack.LAVENDER -> R.string.pack_lavender
+    ThemePack.EMBER -> R.string.pack_ember
+    ThemePack.CONTRAST -> R.string.pack_contrast
+    ThemePack.PHONE -> R.string.pack_phone
 }

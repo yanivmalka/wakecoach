@@ -9,6 +9,8 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.wakecoach.ui.theme.ThemeMode
+import com.wakecoach.ui.theme.ThemePack
+import com.wakecoach.core.message.Address
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -44,6 +46,10 @@ data class UserSettings(
     val callNames: String = "",
     /** Show the long-press "emergency stop" on the ring screen (a development aid). */
     val emergencyStop: Boolean = true,
+    /** How Hebrew text addresses the user (male, female, or neutral when not chosen). */
+    val address: Address = Address.UNSET,
+    /** Color pack ("look") of the whole app. */
+    val themePack: ThemePack = ThemePack.SUNRISE,
 )
 
 class SettingsRepository(private val context: Context) {
@@ -66,6 +72,8 @@ class SettingsRepository(private val context: Context) {
         val FAKE_CALL = booleanPreferencesKey("fake_call")
         val CALL_NAMES = stringPreferencesKey("call_names")
         val EMERGENCY_STOP = booleanPreferencesKey("emergency_stop")
+        val ADDRESS = stringPreferencesKey("address")
+        val THEME_PACK = stringPreferencesKey("theme_pack")
     }
 
     val settings: Flow<UserSettings> = context.dataStore.data.map {
@@ -89,6 +97,8 @@ class SettingsRepository(private val context: Context) {
             fakeCall = it[Keys.FAKE_CALL] ?: true,
             callNames = it[Keys.CALL_NAMES].orEmpty(),
             emergencyStop = it[Keys.EMERGENCY_STOP] ?: true,
+            address = Address.entries.firstOrNull { a -> a.name == it[Keys.ADDRESS] } ?: Address.UNSET,
+            themePack = ThemePack.entries.firstOrNull { p -> p.name == it[Keys.THEME_PACK] } ?: ThemePack.SUNRISE,
         )
     }
 
@@ -115,6 +125,8 @@ class SettingsRepository(private val context: Context) {
             it[Keys.FAKE_CALL] = next.fakeCall
             it[Keys.CALL_NAMES] = next.callNames
             it[Keys.EMERGENCY_STOP] = next.emergencyStop
+            it[Keys.ADDRESS] = next.address.name
+            it[Keys.THEME_PACK] = next.themePack.name
         }
     }
 }

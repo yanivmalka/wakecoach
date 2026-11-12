@@ -1,7 +1,6 @@
 package com.wakecoach.alarm
 
 import com.wakecoach.data.repeatDays
-import com.wakecoach.data.profile
 import android.content.Context
 import android.content.Intent
 import android.os.PowerManager
@@ -69,7 +68,11 @@ data class RingState(
     /** Who the simulated call "rings" on a repeat snooze (requirement 9), and their clip if any. */
     val callName: String? = null,
     val callClip: String? = null,
+    /** Every challenge to pass, in order (a custom profile can chain several). */
+    val chain: List<Challenge> = listOf(challenge),
 ) {
+    /** False when one swipe or tap is enough. */
+    val needsChallenge: Boolean get() = chain.any { it !is Challenge.None }
     val canSnooze: Boolean get() = profile.snooze.canSnooze(request.snoozeCount)
     val snoozeMinutes: Int get() = profile.snooze.minutesFor(request.snoozeCount)
 }
@@ -89,6 +92,7 @@ class RingController(
     private val settings: SettingsRepository,
     private val guard: GuardRepository,
     private val wakeCheck: WakeCheck,
+    private val profiles: com.wakecoach.data.ProfileRepository,
 ) {
     private val _state = MutableStateFlow<RingState?>(null)
     val state: StateFlow<RingState?> = _state
@@ -154,6 +158,9 @@ class RingController(
         }
 
         val lang = Lang.of(Locale.getDefault())
+        val address = guarded("address") { settings.current().address } ?: com.wakecoach.core.message.Address.UNSET
+        // Built-in or the user's own; a deleted custom profile rings as balanced.
+        val alarmProfile = guarded("profile") { profiles.resolve(alarm.profileId) } ?: Profiles.BALANCED
         // Requirement 4: read the user's recent mornings and decide how hard to push today.
         val adapt = if (kind == AlarmKind.WAKE) guarded("adapt") {
             AdaptiveEngine().plan(
@@ -162,7 +169,7 @@ class RingController(
                     zone = ZoneId.systemDefault(),
                     day = LocalDate.now().dayOfWeek,
                     importance = alarm.importance,
-                    baseIntensity = alarm.profile.intensity,
+                    baseIntensity = alarmProfile.intensity,
                 )
             )
         } else null
@@ -176,22 +183,26 @@ class RingController(
             val label = if (kind == AlarmKind.GOAL) {
                 "🎯 " + (guarded("goal") { repository.priorityFor(LocalDate.now()) }?.takeIf { it.isNotBlank() } ?: alarm.label)
             } else alarm.label
-            RingState(request, kind, label, profile, Challenge.None, message = label)
+            // A reminder may be set to be turned off with a custom profile's skills; otherwise one tap.
+            val chain = if (kind != AlarmKind.TEST && alarmProfile.skills.isNotEmpty()) {
+                guarded("reminder skills") { challenges.forRing(alarmProfile, request.snoozeCount, Phrases.forLang(lang)) }
+            } else null
+            val chainOrNone = chain?.takeIf { it.isNotEmpty() } ?: listOf(Challenge.None)
+            RingState(request, kind, label, profile, chainOrNone.first(), message = label, chain = chainOrNone)
         } else {
-            val profile = alarm.profile.let { p -> adapt?.let { p.copy(intensity = it.intensity) } ?: p }
+            val profile = alarmProfile.let { p -> adapt?.let { p.copy(intensity = it.intensity) } ?: p }
             // A surprise morning always has a challenge, even on a no-challenge profile.
             val types = if (adapt?.surprise == true && profile.challenges.all { it == ChallengeType.NONE }) {
                 listOf(ChallengeType.CATCH_SUN)
             } else profile.challenges
-            val challenge = challenges.generate(
-                type = challenges.pickType(types),
-                intensity = profile.intensity,
-                phrases = Phrases.forLang(lang),
+            val chain = challenges.forRing(
+                profile, request.snoozeCount, Phrases.forLang(lang),
                 registeredCode = null, // code registration arrives with the scanner in a later phase
-            )
+                fallback = types,
+            ).ifEmpty { listOf(Challenge.None) }
             // The clock fib is decided up front so the screen shows it from the first second.
             val ahead = if (guarded("clock") { settings.current().clockAhead } == true) Random(request.firstRingAt).nextInt(3, 10) else 0
-            RingState(request, kind, alarm.label, profile, challenge, message = "", clockAheadMinutes = ahead)
+            RingState(request, kind, alarm.label, profile, chain.first(), message = "", clockAheadMinutes = ahead, chain = chain)
         }
 
         val event = if (kind == AlarmKind.WAKE) guarded("calendar") { calendar.firstMorningEvent(LocalDate.now()) } else null
@@ -219,7 +230,7 @@ class RingController(
         guarded("status") { statusTracker.ringing(Instant.ofEpochMilli(now)) }
         val eventLine = event?.let { context.getString(R.string.event_today, it.start.format(HHMM), it.title) }
         val morning = guarded("message") {
-            val composer = MessageComposer(lang)
+            val composer = MessageComposer(lang, address = address)
             listOfNotNull(
                 if (request.mode == RingMode.RELAPSE) context.getString(R.string.relapse_line) else null,
                 adapt?.let { composer.riskLine(it.reasons, LocalDate.now().dayOfWeek) },
@@ -228,7 +239,7 @@ class RingController(
         }
         val quote = guarded("quote") { quotes.next(lang) }
         val story = guarded("story") {
-            ReverseStory(lang).tell(event?.start, event?.title, repository.priorityFor(LocalDate.now()))
+            ReverseStory(lang, address = address).tell(event?.start, event?.title, repository.priorityFor(LocalDate.now()))
         }
         // The simulated call only "dials" someone the user named or who recorded a message.
         val call = guarded("call") {
@@ -321,7 +332,7 @@ class RingController(
                 firstRingAt = s.request.firstRingAt,
                 dismissedAt = now,
                 snoozeCount = s.request.snoozeCount,
-                challengeType = s.challenge.type.name,
+                challengeType = s.chain.joinToString("+") { it.type.name },
             )
         )
         statusTracker.dismissed(Instant.ofEpochMilli(now))

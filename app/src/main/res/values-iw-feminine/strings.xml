@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Feminine forms of the gendered Hebrew strings (Android 14+ grammatical gender). The neutral
+     default is in values-iw; keep these keys in sync with it. -->
+<resources>
+    <string name="add_alarm">הוסיפי התראה</string>
+    <string name="save">שמרי</string>
+    <string name="delete">מחקי</string>
+    <string name="swipe_to_stop">החליקי עד הסוף כדי לכבות</string>
+    <string name="challenge_math">פתרי כדי לכבות</string>
+    <string name="challenge_phrase">הקלידי בדיוק:</string>
+    <string name="challenge_shake">נערי את הטלפון: נשארו %1$d</string>
+    <string name="challenge_steps">קומי ולכי: נשארו %1$d צעדים</string>
+    <string name="check">בדקי</string>
+    <string name="wrong_try_again">לא בדיוק. נסי שוב.</string>
+    <string name="q_mood">איך את מרגישה?</string>
+    <string name="q_tiredness">כמה את עייפה?</string>
+    <string name="q_later_tiredness">כמה את עייפה עכשיו?</string>
+    <string name="skip">דלגי</string>
+    <string name="notif_followup_text">הקישי כדי לדרג כמה את ערה עכשיו</string>
+    <string name="update_available">גרסה %1$s זמינה – עדכני</string>
+    <string name="update_allow">אשרי</string>
+    <string name="update_now">עדכני עכשיו</string>
+    <string name="check_updates">בדקי עדכונים</string>
+    <string name="health_banner">⚠️ ייתכן שההתראות לא יצלצלו – הקישי לבדיקה</string>
+    <string name="health_fix">תקני</string>
+    <string name="health_open">פתחי</string>
+    <string name="health_test_scheduled">התראת בדיקה בדרך… נעלי את המסך</string>
+    <string name="health_armed_body">חלק מההתראות לא רשומות במערכת. הקישי כדי לרשום מחדש.</string>
+    <string name="health_battery_body">אנדרואיד עלול לעכב התראות כדי לחסוך בסוללה. בחרי \"אפשר\".</string>
+    <string name="health_background_body">האפליקציה מוגבלת ברקע. פתחי סוללה ואפשרי.</string>
+    <string name="health_samsung_body">סוללה ← הגבלות שימוש ברקע ← אפליקציות שלעולם לא נרדמות ← הוסיפי את WakeCoach.</string>
+    <string name="health_volume_body">עוצמת ההתראה מושתקת. הקישי כדי להעלות ל-70%.</string>
+    <string name="health_steps_body">מאפשר לבדיקת החזרה לשינה לראות שהלכת. בלעדיה תקבלי במקום זה \"עדיין ערה?\" עם הקשה.</string>
+    <string name="calendar_connect">חברי</string>
+    <string name="rec_explain">אם לא קמת אחרי חצי דקה, אחת ההקלטות מושמעת מעל הצלצול. בקשי מבני המשפחה להקליט לך מסר לבוקר.</string>
+    <string name="rec_record">הקליטי</string>
+    <string name="rec_stop">עצרי</string>
+    <string name="interview_hint_why">תגידי את זה במילים שלך. תשמעי את זה בבקרים שקשה לקום.</string>
+    <string name="interview_q_hard">מה תגידי לעצמך כשקשה לקום?</string>
+    <string name="interview_q_family">בקשי מבן משפחה להקליט לך מסר לבוקר</string>
+    <string name="interview_hint_family">תני לו את הטלפון. קודם כתבי את השם שלו.</string>
+    <string name="guard_add">הוסיפי</string>
+    <string name="guard_add_all">הוסיפי הכל</string>
+    <string name="guard_check_now">בדקי עכשיו</string>
+    <string name="still_awake">עדיין ערה? הקישי לאישור</string>
+    <string name="relapse_line">חזרת לישון? לא הפעם. קומי!</string>
+    <string name="breathe_hold">החזיקי…</string>
+    <string name="voice_q_first_task">מה הדבר הראשון שתעשי היום?</string>
+    <string name="voice_q_grateful">צייני דבר אחד שאת מודה עליו הבוקר.</string>
+    <string name="voice_q_today_goal">מה את רוצה להספיק היום?</string>
+    <string name="voice_hint">עני בקול, לפחות %1$d מילים.</string>
+    <string name="voice_speak">עני</string>
+    <string name="stand_up_prompt">קומי והחזיקי את הטלפון זקוף %1$d שניות</string>
+    <string name="story_get_up">טוב, אני קמה ✓</string>
+    <string name="fake_call_voice">הלו? זה %1$s. את עדיין במיטה? קדימה, לקום!</string>
+    <string name="demo_add">הוסיפי נתוני דמה: %1$s</string>
+    <string name="demo_reset">מחקי את כל המידע</string>
+    <string name="emergency_stop_now">עצרי עכשיו כל צלצול</string>
+    <string name="challenge_steps_hint">הסתובבי בחדר עם הטלפון ביד</string>
+    <string name="challenge_catch_sun">הקישי על השמש ☀️ (%1$d מתוך %2$d)</string>
+    <string name="challenge_catch_sun_miss">זו לא השמש, נסי שוב</string>
+    <string-array name="scale_tiredness">
+        <item>ערנית לגמרי</item>
+        <item>ערנית</item>
+        <item>קצת עייפה</item>
+        <item>עייפה</item>
+        <item>מותשת</item>
+    </string-array>
+</resources>

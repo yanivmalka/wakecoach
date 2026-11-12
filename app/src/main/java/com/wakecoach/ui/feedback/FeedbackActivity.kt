@@ -68,7 +68,7 @@ class FeedbackActivity : ComponentActivity() {
             message = listOfNotNull(
                 // Own up to the clock fib now that the user is up.
                 if (ahead > 0) getString(R.string.clock_ahead_reveal, ahead) else null,
-                MessageComposer(Lang.of(Locale.getDefault())).morningLine(repo.stats(), repo.priorityFor(LocalDate.now())),
+                MessageComposer(Lang.of(Locale.getDefault()), address = container.settings.current().address).morningLine(repo.stats(), repo.priorityFor(LocalDate.now())),
             ).joinToString("\n")
             // The alarm sound has stopped by now; say today's goal out loud.
             speaker = Speaker(this@FeedbackActivity).also { it.speak(message) }
@@ -79,7 +79,7 @@ class FeedbackActivity : ComponentActivity() {
             val settings by container.settings.settings.collectAsStateWithLifecycle(null)
             // Wait for the stored theme so the screen does not flash the wrong colors.
             val mode = settings?.themeMode ?: return@setContent
-            WakeCoachTheme(mode) {
+            WakeCoachTheme(mode, settings?.themePack) {
                 if (later) {
                     var tired by remember { mutableStateOf<Int?>(null) }
                     Screen(

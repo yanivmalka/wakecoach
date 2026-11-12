@@ -4,7 +4,6 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.wakecoach.core.model.AlarmKind
-import com.wakecoach.core.model.Profile
 import com.wakecoach.core.model.Profiles
 import java.time.DayOfWeek
 import java.time.LocalTime
@@ -43,7 +42,6 @@ data class AlarmEntity(
 val AlarmEntity.time: LocalTime get() = LocalTime.of(hour, minute)
 val AlarmEntity.repeatDays: Set<DayOfWeek>
     get() = DayOfWeek.entries.filter { daysMask and (1 shl (it.value - 1)) != 0 }.toSet()
-val AlarmEntity.profile: Profile get() = Profiles.byId(profileId)
 val AlarmEntity.skipLocalDate: java.time.LocalDate? get() = skipDate?.let(java.time.LocalDate::ofEpochDay)
 /** Repeats every week on its days (not a one-shot, not "once on these days"). */
 val AlarmEntity.isWeekly: Boolean get() = daysMask != 0 && !once
@@ -126,3 +124,38 @@ data class GuardDecisionEntity(
     val date: Long?,
     val decision: String,
 )
+
+/** A skill tuned in the practice area and saved by name (e.g. "Long sun hunt"). */
+@Entity(tableName = "skill_presets")
+data class SkillPresetEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val name: String,
+    /** [com.wakecoach.core.skill.SkillConfig.encode]. */
+    val config: String,
+    val createdAt: Long,
+)
+
+/** A user-made profile, listed with the built-in ones. Alarms refer to it as "custom:<id>". */
+@Entity(tableName = "custom_profiles")
+data class CustomProfileEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val name: String,
+    /** [com.wakecoach.core.model.Intensity] name: how hard the coach pushes on top of the skills. */
+    val intensity: String,
+    val maxSnoozes: Int,
+    val snoozeMinutes: Int,
+    val shrinkMinutes: Int,
+    val crescendoSeconds: Int,
+    val vibrate: Boolean,
+    /** Skills in order, [com.wakecoach.core.skill.SkillConfig.encodeList]. */
+    val skills: String,
+    /** [com.wakecoach.core.skill.SkillMode] name. */
+    val mode: String,
+) {
+    val profileId: String get() = CUSTOM_PREFIX + id
+
+    companion object {
+        const val CUSTOM_PREFIX = "custom:"
+        fun idOf(profileId: String): Long? = profileId.removePrefix(CUSTOM_PREFIX).takeIf { profileId.startsWith(CUSTOM_PREFIX) }?.toLongOrNull()
+    }
+}

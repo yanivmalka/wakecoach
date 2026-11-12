@@ -49,6 +49,11 @@ import com.wakecoach.ui.home.ThumbRow
 import com.wakecoach.ui.profileDescription
 import com.wakecoach.ui.profileName
 import com.wakecoach.ui.theme.BigTouch
+import com.wakecoach.ui.components.ConfirmDeleteDialog
+import com.wakecoach.ui.skills.skillEmoji
+import com.wakecoach.data.CustomProfileEntity
+import com.wakecoach.data.toProfile
+import androidx.compose.material3.TextButton
 
 @Composable
 fun EditAlarmScreen(
@@ -57,7 +62,10 @@ fun EditAlarmScreen(
     onSave: (AlarmEntity) -> Unit,
     onDelete: (AlarmEntity) -> Unit,
     onCancel: () -> Unit,
+    customProfiles: List<CustomProfileEntity> = emptyList(),
+    onManageProfiles: () -> Unit = {},
 ) {
+    var confirmDelete by remember { mutableStateOf(false) }
     val base = initial ?: AlarmEntity(hour = 7, minute = 0)
     var kind by remember { mutableStateOf(base.alarmKind) }
     var hour by remember { mutableIntStateOf(base.hour) }
@@ -145,26 +153,34 @@ fun EditAlarmScreen(
 
             SoundPickerRow(stored = soundUri, onChange = { soundUri = it })
 
-            if (!isReminder) {
-                Text(stringResource(R.string.profile), fontSize = 18.sp)
-                Profiles.all.forEach { p ->
-                    val selected = p.id == profileId
-                    val shape = RoundedCornerShape(16.dp)
-                    Column(
-                        Modifier.fillMaxWidth()
-                            .background(
-                                if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
-                                shape,
-                            )
-                            .border(2.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant, shape)
-                            .clickable { profileId = p.id }
-                            .padding(16.dp),
-                    ) {
-                        val color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
-                        Text(stringResource(profileName(p.id)), fontSize = 20.sp, color = color)
-                        Text(stringResource(profileDescription(p.id)), fontSize = 14.sp, color = color)
+            if (isReminder) {
+                // A reminder rings with one tap to stop, or with the skills of one of the user's profiles.
+                Text(stringResource(R.string.reminder_stop_with), fontSize = 18.sp)
+                ProfileCard(
+                    title = "👆 " + stringResource(R.string.reminder_one_tap), subtitle = null,
+                    selected = CustomProfileEntity.idOf(profileId) == null,
+                ) { profileId = Profiles.BALANCED.id }
+                customProfiles.forEach { p ->
+                    ProfileCard("👤 " + p.name, p.toProfile().skills.joinToString(" → ") { skillEmoji(it.type) }, p.profileId == profileId) {
+                        profileId = p.profileId
                     }
                 }
+                TextButton(onClick = onManageProfiles) { Text(stringResource(R.string.profiles_manage)) }
+            }
+
+            if (!isReminder) {
+                Text(stringResource(R.string.profile), fontSize = 18.sp)
+                customProfiles.forEach { p ->
+                    ProfileCard("👤 " + p.name, p.toProfile().skills.joinToString(" → ") { skillEmoji(it.type) }, p.profileId == profileId) {
+                        profileId = p.profileId
+                    }
+                }
+                Profiles.all.forEach { p ->
+                    ProfileCard(stringResource(profileName(p.id)), stringResource(profileDescription(p.id)), p.id == profileId) {
+                        profileId = p.id
+                    }
+                }
+                TextButton(onClick = onManageProfiles) { Text(stringResource(R.string.profiles_manage)) }
 
                 Text(stringResource(R.string.importance), fontSize = 18.sp)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -187,7 +203,7 @@ fun EditAlarmScreen(
 
         ThumbRow(leftHanded) {
             if (initial != null) {
-                OutlinedButton(onClick = { onDelete(initial) }, modifier = Modifier.heightIn(min = BigTouch)) {
+                OutlinedButton(onClick = { confirmDelete = true }, modifier = Modifier.heightIn(min = BigTouch)) {
                     Text(stringResource(R.string.delete))
                 }
             } else {
@@ -212,5 +228,29 @@ fun EditAlarmScreen(
                 modifier = Modifier.heightIn(min = BigTouch).padding(start = 12.dp),
             ) { Text(stringResource(R.string.save), fontSize = 22.sp, modifier = Modifier.padding(horizontal = 24.dp)) }
         }
+    }
+
+    if (confirmDelete && initial != null) {
+        ConfirmDeleteDialog(
+            what = initial.label.ifBlank { "%02d:%02d".format(initial.hour, initial.minute) },
+            onConfirm = { confirmDelete = false; onDelete(initial) },
+            onDismiss = { confirmDelete = false },
+        )
+    }
+}
+
+@Composable
+private fun ProfileCard(title: String, subtitle: String?, selected: Boolean, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(16.dp)
+    Column(
+        Modifier.fillMaxWidth()
+            .background(if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant, shape)
+            .border(2.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant, shape)
+            .clickable(onClick = onClick)
+            .padding(16.dp),
+    ) {
+        val color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+        Text(title, fontSize = 20.sp, color = color)
+        if (!subtitle.isNullOrBlank()) Text(subtitle, fontSize = 14.sp, color = color)
     }
 }

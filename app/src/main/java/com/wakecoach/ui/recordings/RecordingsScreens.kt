@@ -54,6 +54,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.wakecoach.R
+import com.wakecoach.ui.components.ConfirmDeleteDialog
 import com.wakecoach.audio.Recorder
 import com.wakecoach.data.RecordingEntity
 import com.wakecoach.data.RecordingPurpose
@@ -112,13 +113,22 @@ fun RecordingsScreen(
         }
         if (importFailed) Text(stringResource(R.string.rec_import_failed), color = MaterialTheme.colorScheme.error)
 
+        var deleting by remember { mutableStateOf<RecordingEntity?>(null) }
         LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(clips, key = { it.id }) { clip ->
-                ClipRow(clip, playing = player.playingId == clip.id, onPlay = { player.toggle(clip) }, onDelete = {
+                ClipRow(clip, playing = player.playingId == clip.id, onPlay = { player.toggle(clip) }, onDelete = { deleting = clip })
+            }
+        }
+        deleting?.let { clip ->
+            ConfirmDeleteDialog(
+                what = clip.owner.ifBlank { stringResource(R.string.rec_me) },
+                onConfirm = {
+                    deleting = null
                     player.stop()
                     scope.launch { repo.delete(clip) }
-                })
-            }
+                },
+                onDismiss = { deleting = null },
+            )
         }
         OutlinedButton(onClick = onBack, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
             Text(stringResource(R.string.done), fontSize = 18.sp)

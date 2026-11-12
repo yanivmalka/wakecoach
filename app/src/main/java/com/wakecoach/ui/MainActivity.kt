@@ -1,6 +1,5 @@
 package com.wakecoach.ui
 
-import com.wakecoach.data.profile
 import android.Manifest
 import android.content.Intent
 import android.os.Build
@@ -45,6 +44,11 @@ import com.wakecoach.ui.evening.EveningScreen
 import com.wakecoach.ui.home.HomeScreen
 import com.wakecoach.ui.home.SettingsScreen
 import com.wakecoach.ui.demo.DemoDataScreen
+import com.wakecoach.ui.skills.SkillsScreen
+import com.wakecoach.ui.skills.SkillEditScreen
+import com.wakecoach.ui.profiles.ProfilesScreen
+import com.wakecoach.ui.profiles.ProfileEditScreen
+import com.wakecoach.ui.profiles.asEditable
 import com.wakecoach.core.update.UpdateCheck
 import com.wakecoach.ui.ringing.RingingActivity
 import com.wakecoach.ui.update.UpdateBanner
@@ -64,6 +68,11 @@ sealed interface Screen {
     data object Progress : Screen
     data object Demo : Screen
     data class Guard(val date: LocalDate) : Screen
+    data object Skills : Screen
+    data class SkillEdit(val type: ChallengeType, val presetId: Long?) : Screen
+    data object Profiles : Screen
+    /** [id] edits a saved profile; [copyOf] starts from a built-in one; both null is a new profile. */
+    data class ProfileEdit(val id: Long?, val copyOf: String? = null) : Screen
 }
 
 class MainActivity : ComponentActivity() {
@@ -73,6 +82,7 @@ class MainActivity : ComponentActivity() {
     private var resumes by mutableIntStateOf(0)
     private var stepAsked = false
     private val askPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
+    private val askPermissions = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -85,14 +95,24 @@ class MainActivity : ComponentActivity() {
             // Wait for the stored theme so a forced light/dark choice does not flash the system one.
             val stored by container.settings.settings.collectAsStateWithLifecycle(null)
             val mode = stored?.themeMode ?: return@setContent
-            WakeCoachTheme(mode) {
+            WakeCoachTheme(mode, stored?.themePack) {
                 val alarms by vm.alarms.collectAsStateWithLifecycle()
                 val ringing by container.ringController.state.collectAsStateWithLifecycle()
                 // If notifications are blocked the full-screen intent never shows; open the ring UI from here.
                 LaunchedEffect(ringing != null) {
                     if (ringing != null) startActivity(Intent(this@MainActivity, RingingActivity::class.java))
                 }
-                BackHandler(enabled = screen != Screen.Home) { screen = Screen.Home }
+                BackHandler(enabled = screen != Screen.Home) {
+                    screen = when (screen) {
+                        is Screen.SkillEdit -> Screen.Skills
+                        is Screen.ProfileEdit -> Screen.Profiles
+                        Screen.Skills, Screen.Profiles -> Screen.Settings
+                        else -> Screen.Home
+                    }
+                }
+                val customProfiles by container.profiles.custom.collectAsStateWithLifecycle()
+                // Where "manage profiles" from the alarm editor returns to.
+                var profilesFrom by remember { mutableStateOf<Screen>(Screen.Settings) }
 
                 val disabling by vm.pendingDisable.collectAsStateWithLifecycle()
                 disabling?.let { alarm ->
@@ -170,10 +190,13 @@ class MainActivity : ComponentActivity() {
                     is Screen.Edit -> EditAlarmScreen(
                         initial = alarms.firstOrNull { it.id == s.alarmId },
                         leftHanded = settings.leftHanded,
+                        customProfiles = customProfiles,
+                        onManageProfiles = { profilesFrom = s; screen = Screen.Profiles },
                         onSave = {
-                            if (ChallengeType.STEPS in it.profile.challenges && Build.VERSION.SDK_INT >= 29) {
+                            val skills = container.profiles.resolveLoaded(it.profileId).challenges
+                            if (ChallengeType.STEPS in skills && Build.VERSION.SDK_INT >= 29) {
                                 askPermission.launch(Manifest.permission.ACTIVITY_RECOGNITION)
-                            } else if (ChallengeType.VOICE in it.profile.challenges) {
+                            } else if (ChallengeType.VOICE in skills) {
                                 // Asked now, not over the lock screen at 6am.
                                 askPermission.launch(Manifest.permission.RECORD_AUDIO)
                             }
@@ -200,6 +223,12 @@ class MainActivity : ComponentActivity() {
                         onConnectCalendar = { askPermission.launch(Manifest.permission.READ_CALENDAR) },
                         onWakeCheckChange = { on -> vm.updateSettings { it.copy(wakeCheck = on) } },
                         onEmergencyStop = { container.ringController.emergencyStop() },
+                        onOpenSkills = { screen = Screen.Skills },
+                        onOpenProfiles = { profilesFrom = Screen.Settings; screen = Screen.Profiles },
+                        onAddressChange = { a ->
+                            vm.updateSettings { it.copy(address = a) }
+                            AddressApplier.apply(this@MainActivity, a)
+                        },
                         onCheckGuard = { screen = Screen.Guard(GuardNotifier.window(LocalDateTime.now()).first) },
                         onCheckUpdates = {
                             showUpdate = true
@@ -217,6 +246,45 @@ class MainActivity : ComponentActivity() {
                         repo = container.recordings,
                         onDone = { screen = Screen.Recordings },
                     )
+                    Screen.Skills -> SkillsScreen(
+                        repo = container.profiles,
+                        onOpen = { type, id -> screen = Screen.SkillEdit(type, id) },
+                        onBack = { screen = Screen.Settings },
+                    )
+                    is Screen.SkillEdit -> SkillEditScreen(
+                        type = s.type,
+                        preset = s.presetId?.let { id -> container.profiles.presets.value.firstOrNull { it.id == id } },
+                        repo = container.profiles,
+                        onNeedPermission = ::askFor,
+                        onBack = { screen = Screen.Skills },
+                    )
+                    Screen.Profiles -> ProfilesScreen(
+                        repo = container.profiles,
+                        onEdit = { screen = Screen.ProfileEdit(it) },
+                        onCopy = { screen = Screen.ProfileEdit(null, copyOf = it) },
+                        onBack = { screen = profilesFrom.also { profilesFrom = Screen.Settings } },
+                    )
+                    is Screen.ProfileEdit -> {
+                        val copySuffix = getString(R.string.profile_copy_suffix)
+                        val initial = remember(s) {
+                            s.id?.let { id -> customProfiles.firstOrNull { it.id == id } }
+                                ?: s.copyOf?.let { b ->
+                                    val p = com.wakecoach.core.model.Profiles.byId(b)
+                                    p.asEditable(getString(profileName(b)) + " " + copySuffix)
+                                }
+                                ?: com.wakecoach.core.model.Profiles.BALANCED.asEditable("").copy(
+                                    skills = com.wakecoach.core.skill.SkillConfig.encodeList(
+                                        com.wakecoach.core.skill.Skills.suggestedPlan(com.wakecoach.core.model.Intensity.BALANCED)
+                                    ),
+                                )
+                        }
+                        ProfileEditScreen(
+                            initial = initial,
+                            repo = container.profiles,
+                            onNeedPermission = ::askFor,
+                            onBack = { screen = Screen.Profiles },
+                        )
+                    }
                     Screen.Demo -> DemoDataScreen(container.demo, onBack = { screen = Screen.Settings })
                     Screen.Progress -> ProgressScreen(container.repository, onBack = { screen = Screen.Home })
                     is Screen.Guard -> GuardScreen(
@@ -267,6 +335,18 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    /** Practice needs the same permissions as a real morning; ask before, not over the lock screen. */
+    private fun askFor(types: List<ChallengeType>) {
+        val needed = types.mapNotNull { type ->
+            when (type) {
+                ChallengeType.VOICE -> Manifest.permission.RECORD_AUDIO
+                ChallengeType.STEPS -> if (Build.VERSION.SDK_INT >= 29) Manifest.permission.ACTIVITY_RECOGNITION else null
+                else -> null
+            }
+        }.distinct().filter { checkSelfPermission(it) != android.content.pm.PackageManager.PERMISSION_GRANTED }
+        if (needed.isNotEmpty()) askPermissions.launch(needed.toTypedArray())
     }
 
     override fun onResume() {

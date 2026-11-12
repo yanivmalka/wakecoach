@@ -47,7 +47,8 @@ import com.wakecoach.data.AlarmEntity
 import com.wakecoach.data.alarmKind
 import com.wakecoach.data.skipLocalDate
 import java.time.LocalDate
-import com.wakecoach.ui.profileName
+import com.wakecoach.ui.profileLabel
+import com.wakecoach.data.CustomProfileEntity
 import com.wakecoach.ui.theme.BigDigits
 import com.wakecoach.ui.theme.BigTouch
 import kotlinx.coroutines.delay
@@ -158,7 +159,9 @@ private fun AlarmRow(alarm: AlarmEntity, onClick: () -> Unit, onToggle: (Boolean
                 alarm.once -> stringResource(R.string.once_on, dayNames)
                 else -> dayNames
             }
-            val profile = if (alarm.alarmKind.isNudge) "" else stringResource(profileName(alarm.profileId))
+            // Reminders show a profile only when one is set to turn them off.
+            val profile = if (alarm.alarmKind.isNudge && CustomProfileEntity.idOf(alarm.profileId) == null) ""
+            else profileLabel(alarm.profileId)
             // One-shots added for a later day carry an internal skip of today; only repeating alarms show it.
             alarm.skipLocalDate?.takeIf { alarm.isWeekly && !it.isBefore(LocalDate.now()) }?.let { skip ->
                 Text(

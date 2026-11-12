@@ -2,6 +2,11 @@ package com.wakecoach.core.challenge
 
 import com.wakecoach.core.model.ChallengeType
 import com.wakecoach.core.model.Intensity
+import com.wakecoach.core.model.Profile
+import com.wakecoach.core.skill.Param
+import com.wakecoach.core.skill.SkillConfig
+import com.wakecoach.core.skill.SkillMode
+import com.wakecoach.core.skill.Skills
 import kotlin.random.Random
 
 /** A task that must be completed to dismiss the alarm (requirement 3). */
@@ -113,14 +118,11 @@ class ChallengeGenerator(private val random: Random = Random.Default) {
      * Gentle mornings: few rounds on a 3x3 grid. Harder ones: more rounds on 4x4, and the hardest
      * adds a full moon, the one look-alike, so the eyes have to actually open.
      */
-    fun catchSun(intensity: Intensity): Challenge.CatchSun {
-        val (rounds, columns) = when (intensity) {
-            Intensity.GENTLE -> 4 to 3
-            Intensity.BALANCED -> 5 to 3
-            Intensity.FIRM -> 6 to 4
-            Intensity.HARDCORE -> 7 to 4
-        }
-        val decoys = if (intensity == Intensity.HARDCORE) SunBoard.NIGHT + SunBoard.LOOKALIKE else SunBoard.NIGHT
+    fun catchSun(intensity: Intensity): Challenge.CatchSun =
+        fromConfig(Skills.defaults(ChallengeType.CATCH_SUN, intensity), emptyList()) as Challenge.CatchSun
+
+    private fun catchSun(rounds: Int, columns: Int, lookalike: Boolean): Challenge.CatchSun {
+        val decoys = if (lookalike) SunBoard.NIGHT + SunBoard.LOOKALIKE else SunBoard.NIGHT
         var last = -1
         val boards = List(rounds) {
             val cells = columns * columns
@@ -129,6 +131,39 @@ class ChallengeGenerator(private val random: Random = Random.Default) {
             SunBoard(columns, List(cells) { i -> if (i == sun) SunBoard.SUN else decoys.random(random) }, sun)
         }
         return Challenge.CatchSun(boards)
+    }
+
+    /** Builds a challenge from a tuned skill (practice area and user profiles). */
+    fun fromConfig(config: SkillConfig, phrases: List<String>): Challenge = when (config.type) {
+        ChallengeType.CATCH_SUN -> catchSun(config[Param.ROUNDS], config[Param.GRID], config[Param.LOOKALIKE] == 1)
+        ChallengeType.BREATHE -> Challenge.Breathe(
+            rounds = config[Param.ROUNDS], inhaleSec = config[Param.INHALE],
+            holdSec = config[Param.HOLD], exhaleSec = config[Param.EXHALE],
+        )
+        ChallengeType.VOICE -> Challenge.Voice(VoiceQuestion.entries.random(random), minWords = config[Param.WORDS])
+        ChallengeType.STAND_UP -> Challenge.StandUp(seconds = config[Param.SECONDS])
+        ChallengeType.SHAKE -> Challenge.Shake(shakes = config[Param.COUNT])
+        ChallengeType.STEPS -> Challenge.Steps(steps = config[Param.COUNT])
+        else -> generate(config.type, Intensity.BALANCED, phrases, registeredCode = null)
+    }
+
+    /**
+     * The challenges for one ring of [profile]. A custom profile runs its skills in order
+     * ([SkillMode.CHAIN]) or one per ring ([SkillMode.ESCALATE]); a built-in picks one at random.
+     */
+    fun forRing(
+        profile: Profile,
+        snoozeCount: Int,
+        phrases: List<String>,
+        registeredCode: String? = null,
+        fallback: List<ChallengeType> = profile.challenges,
+    ): List<Challenge> {
+        val skills = profile.skills
+        if (skills.isEmpty()) return listOf(generate(pickType(fallback), profile.intensity, phrases, registeredCode))
+        return when (profile.skillMode) {
+            SkillMode.CHAIN -> skills.map { fromConfig(it, phrases) }
+            SkillMode.ESCALATE -> listOf(fromConfig(skills[snoozeCount.coerceIn(0, skills.size - 1)], phrases))
+        }
     }
 
     /** Picks one of the profile's challenge types at random each morning to avoid habituation. */

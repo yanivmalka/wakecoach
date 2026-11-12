@@ -17,33 +17,64 @@ enum class Lang {
 }
 
 /**
+ * How the app addresses the user in Hebrew, which marks gender on verbs and adjectives.
+ * [UNSET] uses neutral phrasing (infinitives, "we"), which reads naturally for everyone.
+ */
+enum class Address {
+    UNSET, MALE, FEMALE;
+
+    /** Picks the Hebrew form for this address. */
+    fun he(male: String, female: String, neutral: String): String = when (this) {
+        MALE -> male
+        FEMALE -> female
+        UNSET -> neutral
+    }
+}
+
+/**
  * Builds the encouraging lines shown on the ringing and morning screens (requirement 2),
  * grounded in the user's own history so they read as facts, not slogans.
  */
-class MessageComposer(private val lang: Lang, private val random: Random = Random.Default) {
+class MessageComposer(
+    private val lang: Lang,
+    private val random: Random = Random.Default,
+    private val address: Address = Address.UNSET,
+) {
 
     fun morningLine(stats: FeedbackStats, tomorrowPriority: String?): String {
         val candidates = buildList {
             if (stats.noSnoozeStreak >= 2) add(t(
-                "${stats.noSnoozeStreak} בקרים ברצף בלי נודניק. אל תשבור את הרצף!",
+                g(
+                    "${stats.noSnoozeStreak} בקרים ברצף בלי נודניק. אל תשבור את הרצף!",
+                    "${stats.noSnoozeStreak} בקרים ברצף בלי נודניק. אל תשברי את הרצף!",
+                    "${stats.noSnoozeStreak} בקרים ברצף בלי נודניק. שומרים על הרצף!",
+                ),
                 "${stats.noSnoozeStreak} mornings in a row without snooze. Don't break the streak!",
             ))
             val ease0 = stats.avgEaseNoSnooze
             val easeS = stats.avgEaseWithSnooze
             if (ease0 != null && easeS != null && ease0 > easeS) add(t(
-                "כשאתה קם בלי נודניק הבוקר שלך מקבל ${fmt(ease0)}/5, ועם נודניק ${fmt(easeS)}/5.",
+                g(
+                    "כשאתה קם בלי נודניק הבוקר שלך מקבל ${fmt(ease0)}/5, ועם נודניק ${fmt(easeS)}/5.",
+                    "כשאת קמה בלי נודניק הבוקר שלך מקבל ${fmt(ease0)}/5, ועם נודניק ${fmt(easeS)}/5.",
+                    "בבקרים בלי נודניק הדירוג שלך ${fmt(ease0)}/5, ועם נודניק ${fmt(easeS)}/5.",
+                ),
                 "When you get up without snoozing you rate the morning ${fmt(ease0)}/5, with snooze ${fmt(easeS)}/5.",
             ))
             stats.avgMood?.takeIf { it >= 3.5 }?.let { add(t(
-                "בממוצע אתה מרגיש ${fmt(it)}/5 בבקרים. עוד בוקר טוב מחכה לך.",
+                g(
+                    "בממוצע אתה מרגיש ${fmt(it)}/5 בבקרים. עוד בוקר טוב מחכה לך.",
+                    "בממוצע את מרגישה ${fmt(it)}/5 בבקרים. עוד בוקר טוב מחכה לך.",
+                    "ההרגשה הממוצעת שלך בבקרים: ${fmt(it)}/5. עוד בוקר טוב מחכה.",
+                ),
                 "On average you feel ${fmt(it)}/5 in the mornings. Another good one is waiting.",
             )) }
         }
         val priorityLine = tomorrowPriority?.takeIf { it.isNotBlank() }?.let {
-            t("אתמול אמרת שהיום חשוב לך: $it", "Last night you said today matters for: $it")
+            t(g("אתמול אמרת שהיום חשוב לך: $it", "אתמול אמרת שהיום חשוב לך: $it", "המטרה שלך להיום: $it"), "Last night you said today matters for: $it")
         }
         val base = candidates.randomOrNull(random) ?: t(
-            "אני מאמין בך. קום, היום שלך מתחיל עכשיו.",
+            g("אני מאמין בך. קום, היום שלך מתחיל עכשיו.", "אני מאמינה בך. קומי, היום שלך מתחיל עכשיו.", "היום שלך מתחיל עכשיו. קמים!"),
             "I believe in you. Get up, your day starts now.",
         )
         return listOfNotNull(priorityLine, base).joinToString("\n")
@@ -72,20 +103,23 @@ class MessageComposer(private val lang: Lang, private val random: Random = Rando
         RiskReason.HARD_WEEKDAY in reasons -> {
             val name = day.getDisplayName(TextStyle.FULL, if (lang == Lang.HE) Locale("iw") else Locale.ENGLISH)
             // Hebrew day names come as "יום ראשון"; the plural reads "ימי ראשון".
-            t("${name.replace("יום ", "ימי ")} קשים לך לאחרונה. היום אני לא מוותר.", "${name}s have been hard lately. Not giving up today.")
+            t("${name.replace("יום ", "ימי ")} קשים לך לאחרונה. היום לא מוותרים.", "${name}s have been hard lately. Not giving up today.")
         }
         RiskReason.RECENT_SNOOZES in reasons ->
             t("השבוע היו הרבה נודניקים. היום קמים בצלצול הראשון.", "Lots of snoozing this week. Today we get up on the first ring.")
         RiskReason.SHORT_SLEEP in reasons ->
-            t("ישנת מעט הלילה. קום, שתה מים, וצא לאור.", "Short night. Get up, drink water and get some daylight.")
+            t(g("ישנת מעט הלילה. קום, שתה מים, וצא לאור.", "ישנת מעט הלילה. קומי, שתי מים, וצאי לאור.", "לילה קצר. קמים, שותים מים, ויוצאים לאור."), "Short night. Get up, drink water and get some daylight.")
         RiskReason.IMPORTANT_DAY in reasons ->
-            t("יום חשוב היום. זה הרגע להראות מה אתה שווה.", "Big day today. This is the moment that counts.")
+            t(g("יום חשוב היום. זה הרגע להראות מה אתה שווה.", "יום חשוב היום. זה הרגע להראות מה את שווה.", "יום חשוב היום. זה הרגע שחשוב."), "Big day today. This is the moment that counts.")
         RiskReason.GOOD_STREAK in reasons ->
-            t("רצף יפה. אל תשבור אותו.", "Nice streak. Don't break it.")
+            t(g("רצף יפה. אל תשבור אותו.", "רצף יפה. אל תשברי אותו.", "רצף יפה. שומרים עליו."), "Nice streak. Don't break it.")
         else -> null
     }
 
     private fun t(he: String, en: String) = if (lang == Lang.HE) he else en
+
+    /** Hebrew in the user's form of address. */
+    private fun g(male: String, female: String, neutral: String) = address.he(male, female, neutral)
 
     private fun fmt(d: Double): String {
         val r = (d * 10).roundToInt() / 10.0
