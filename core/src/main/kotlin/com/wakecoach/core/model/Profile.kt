@@ -10,7 +10,8 @@ enum class Intensity(val level: Int) {
 
 /**
  * MATH stays for stored history but no profile uses it any more: mental arithmetic right after
- * waking is unpleasant and unfamiliar to many people. CATCH_SUN replaced it.
+ * waking is unpleasant and unfamiliar to many people. CATCH_SUN replaced it. TYPE_PHRASE is also
+ * unused by profiles (typing half-asleep is a chore); it remains only for stored history.
  */
 enum class ChallengeType { NONE, MATH, TYPE_PHRASE, SHAKE, STEPS, SCAN_CODE, BREATHE, VOICE, STAND_UP, CATCH_SUN }
 
@@ -59,7 +60,7 @@ object Profiles {
     val FIRM = Profile(
         id = "firm",
         intensity = Intensity.FIRM,
-        challenges = listOf(ChallengeType.CATCH_SUN, ChallengeType.TYPE_PHRASE, ChallengeType.SHAKE, ChallengeType.VOICE),
+        challenges = listOf(ChallengeType.CATCH_SUN, ChallengeType.SHAKE, ChallengeType.VOICE),
         snooze = SnoozePolicy(maxSnoozes = 1, snoozeMinutes = 5),
         crescendoSeconds = 30,
         vibrate = true,

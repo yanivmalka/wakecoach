@@ -146,7 +146,7 @@ class ChallengeTest {
     }
 
     @Test fun noProfileAsksForMentalMath() {
-        assertTrue(Profiles.all.none { ChallengeType.MATH in it.challenges })
+        assertTrue(Profiles.all.none { ChallengeType.MATH in it.challenges || ChallengeType.TYPE_PHRASE in it.challenges })
     }
 
     @Test fun scanWithoutCodeFallsBackToSteps() {
